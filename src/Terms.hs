@@ -191,18 +191,20 @@ evalApp (App Fix (Abs v body)) arg (EvalContext ctx n pn) =
   let (newN, newLTy) = alphaConv body (Map.fromList []) n in
     EvalStepSuccess (App (instantiate v (App Fix (Abs v body)) newLTy) arg) (EvalContext ctx newN pn)
 
+
 evalApp (App Ref lte) _ (EvalContext ctx n pn) =
   let newAddr = "p:" ++ show pn 
       newCtx = Map.insert newAddr lte ctx
   in 
-    EvalStepSuccess (Vaddr newAddr) (EvalContext newCtx n  (pn + 1))
+    EvalStepSuccess (Vaddr newAddr) (EvalContext newCtx n (pn + 1))
 
 evalApp (App Deref (Vaddr newAddr)) _ (EvalContext ctx n pn) =
   case (Map.lookup newAddr ctx) of
     Just x -> EvalStepSuccess x (EvalContext ctx n pn)
     Nothing -> EvalStepFailure (App Deref (Var newAddr)) (EvaluationFailure "Deref failed: addr not in evaluation context")
 
-evalApp (App Assign (Var x)) lte (EvalContext ctx n pn) =
+
+evalApp (App Assign (Vaddr x)) lte (EvalContext ctx n pn) =
   let newCtx = Map.insert x lte ctx in
     EvalStepSuccess (Unit) (EvalContext newCtx n pn)
 
