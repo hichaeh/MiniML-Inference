@@ -20,16 +20,28 @@ test2 gas =
   in 
     putStrLn (show z)
 
-
+test3 ::  Int -> Int -> IO ()
+test3 gas v =
+  let x = App ((App Fix (Abs "sum" (Abs "x" (IfZ (Var "x") (LInt 0) (App (App Add (Var "x")) (App (Var "sum") (App (App Sub (Var "x")) (LInt 1) )))))))) (LInt v)
+      y = (alphaConv x (Map.fromList []) 1)
+      z = eval_CBV (snd y) gas [] (EvalContext (Map.fromList []) (fst y) 1)
+  in   
+    do 
+      putStrLn ("\n\nEvaluation of : " ++ show x)  
+      printEvalRes z
 
 main :: IO ()
 main =
   do
-  test1 10
-  test2 10
-  
+  --test1 10
+  --test2 10
+  test3 55 5
 
 {-
+
+eval_CBV (App (App Cons (App (App Add (LInt 1)) (LInt 2))) (List [])) 15 [] (makeEvalContext ())
+
+
 let x = 
   (Let "x" (LInt 5) 
     (Let "y" (Abs "x" (Var "x")) 
@@ -72,6 +84,9 @@ App Fix
     )
   ) 
 
+
+App Fix (Abs "sum" (Abs "x" (IfZ (Var "x") (LInt 0) (App (App Add (Var "x")) (App (Var "sum") (App (App Sub (Var "x")) (LInt 1) )))))) 
+
 (fix λsum.(λx.(ifZero x then 0 else ( x + (sum ( x - 1 )) ))))"
 
 
@@ -79,6 +94,12 @@ App Fix
 "( gas = 1, ((fix \955sum.(\955x.(ifZero x then 0 else ( x + (sum ( x - 1 )) )))) 5)
  -> \955x.(ifZero x then 0 else ( x + (\955x115.(ifZero x115 then 0 else ( x115 + (x116 ( x115 - 1 )) )) ( x - 1 )) )) ) "],λx.(ifZero x then 0 else ( x + (λx115.(ifZero x115 then 0 else ( x115 + (x116 ( x115 - 1 )) )) ( x - 1 )) )),False)
 
+
+
+
+(((fix λsum.(λx.(ifZero x then 0 else ( x + (sum ( x - 1 )) )))) 2) 1)
+
+(λx.(ifZero x then 0 else ( x + (sum ( x - 1 ))
 -}
 
 

@@ -35,8 +35,6 @@ data LTerm =
 --data OpBin = Fix2 | Assign2 | Sub2 | Add2 | Cons2
 --data OpUn = Ref2 | Deref2 | Hd | Tl
 
-
-
 cons :: LTerm -> [LTerm] -> [LTerm]
 cons hd tl = hd:tl
 
@@ -45,8 +43,8 @@ instance Show LTerm where
   show (Abs x y) =  "λ" ++ x ++ ".(" ++ (show y) ++ ")" 
 
   show (LInt x) = show x
-  show (List l) = List.intercalate ", " (List.map show l)
-  
+  show (List l) = "[" ++ List.intercalate ", " (List.map show l) ++ "]"
+   
   show (Let x y z) = "let " ++ x ++ " = " ++ (show y) ++ " in " ++ (show z)
   show (IfZ x y z) = "ifZero " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
   show (IfE x y z) = "ifEmpty " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
@@ -89,12 +87,13 @@ alphaConvList (hd:tl) context n acc =
 
 alphaConvList [] _ n acc = (n, List.reverse acc)
 
-
+--
 alphaConv :: LTerm -> Map String String -> Int -> (Int, LTerm)
 alphaConv (Var v) context n = 
   case Map.lookup v context of
     Just x -> (n, Var x)
-    Nothing -> (n + 1, Var ("x" ++ show n))
+    Nothing -> (n , Var v)
+
 alphaConv (Abs var body) context n =
   let newContext = Map.insert var ("x" ++ show n) context in
   let (newN, newLTe) = alphaConv body newContext (n+1) in
@@ -128,7 +127,7 @@ alphaConv (List l) context n =
 
 alphaConv x _ n = (n, x)
 
-
+--
 instantiate :: String -> LTerm -> LTerm -> LTerm 
 instantiate varToRep newLT (Var x) 
   | x == varToRep = newLT
@@ -152,6 +151,9 @@ instantiate _ _ x = x
 
 
 data EvalContext = EvalContext (Map String LTerm) Int Int deriving Show
+
+makeEvalContext :: () -> EvalContext 
+makeEvalContext () = EvalContext (Map.fromList []) 1 1
 
 data EvalFailureCause = EvaluationOver | EvaluationFailure String deriving Show
 
@@ -185,9 +187,9 @@ evalApp (App Sub (LInt arg1)) (LInt arg2) evCtx =
 evalApp (App Cons arg1) (List arg2) evCtx = 
   EvalStepSuccess (List (arg1:arg2)) evCtx
 
-evalApp (App Fix (Abs v body)) _ (EvalContext ctx n pn) =
+evalApp (App Fix (Abs v body)) arg (EvalContext ctx n pn) =
   let (newN, newLTy) = alphaConv body (Map.fromList []) n in
-    EvalStepSuccess (instantiate v newLTy body) (EvalContext ctx newN pn)
+    EvalStepSuccess (App (instantiate v (App Fix (Abs v body)) newLTy) arg) (EvalContext ctx newN pn)
 
 evalApp (App Ref lte) _ (EvalContext ctx n pn) =
   let newAddr = "p:" ++ show pn 
@@ -204,9 +206,16 @@ evalApp (App Assign (Var x)) lte (EvalContext ctx n pn) =
   let newCtx = Map.insert x lte ctx in
     EvalStepSuccess (Unit) (EvalContext newCtx n pn)
 
-evalApp f a _ = EvalStepFailure (App f a) (EvaluationFailure "evalApp : unevaluable")
+evalApp f a _ = EvalStepFailure (App f a) (EvaluationFailure ("evalApp : unevaluable (((" ++ show (App f a) ++ ")))"))
 
 {-
+
+instantie((*(l.fpos.corps)), l.fpos.vari, *(l.apos))
+(*(l.fpos.corps))[ *(l.apos)  /   l.fpos.vari] 
+
+instantie(barendregt((*((*(l.apos)).corps))), (*(l.apos)).vari, l)
+
+
   Does one evaluation step
 -}
 eval_CBV_step :: LTerm -> EvalContext -> EvalStepRes  
@@ -219,7 +228,6 @@ eval_CBV_step (App lte1 lte2) (EvalContext ctx n pn) =
         EvalStepSuccess newLTe2 (EvalContext newctx newN newpn) ->
           EvalStepSuccess (App lte1 newLTe2) (EvalContext newctx newN newpn)
         EvalStepFailure _ _ -> 
-          --EvalStepFailure (App lte1 lte2) ( (show lte1) ++ "  " ++ (show lte2) ))
           evalApp lte1 lte2 (EvalContext ctx n pn))
 
 eval_CBV_step (Let x lte1 lte2) (EvalContext ctx n pn) =
@@ -258,6 +266,26 @@ eval_CBV_step lte _  = EvalStepFailure lte EvaluationOver
 data EvalRes = 
   EvalSuccess [String] LTerm 
   | EvalFailure [String] LTerm String deriving Show
+
+
+ioListToIO :: [IO ()] -> IO ()
+ioListToIO (x:xs) = do 
+  x
+  ioListToIO xs
+ioListToIO [] = putStrLn "~~~~~~~~~~~~~~~~~~~~~~\n"
+
+printEvalRes :: EvalRes -> IO ()
+printEvalRes (EvalSuccess l lte) =
+  do
+    putStrLn "\n~~~~~~~~~~~~~~~~~~~~~~\n"
+    ioListToIO (List.map (\x -> putStrLn (x ++ "\n")) l )
+    putStrLn ("Evaluation Successfull res " ++ show lte) 
+
+printEvalRes (EvalFailure l _ msg) =
+  do
+    putStrLn "\n~~~~~~~~~~~~~~~~~~~~~~\n"
+    ioListToIO (List.map (\x -> putStrLn (x ++ "\n")) l )
+    putStrLn ("Evaluation failed : " ++ msg)
 
 eval_CBV :: LTerm -> Int -> [String] -> EvalContext -> EvalRes
 eval_CBV lte gas acc (EvalContext ctx n pn)
