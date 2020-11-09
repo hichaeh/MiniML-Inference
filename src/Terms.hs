@@ -9,30 +9,32 @@ data LTerm =
   | App LTerm LTerm
   | Abs String LTerm
   
-  | LInt Int
-  | List [LTerm]
-  
-  | Let String LTerm LTerm
   | IfZ LTerm LTerm LTerm
   | IfE LTerm LTerm LTerm
+  | Let String LTerm LTerm
 
-  -- App (App Op Int) Int
-  | Add
-  | Sub  
-  -- App (App Op Var) (List Var)
-  | Cons 
-  -- App Op (List Var)
-  | Hd 
-  | Tl 
+  | LInt Int
+  | List [LTerm]
+
+  | Vaddr String
+  | Unit
+
+  | Add 
+  | Sub 
   
-  -- App Op (Abs)
-  | Fix  
+  | Cons 
+  | Hd    
+  | Tl    
+  
+  | Fix
 
---  | LTRef String LTerm
-  | Unit deriving Eq
+  | Ref    
+  | Deref 
+  | Assign deriving Eq
 
---  | Assign String LTerm
---  | Deref LTerm deriving Eq
+--data OpBin = Fix2 | Assign2 | Sub2 | Add2 | Cons2
+--data OpUn = Ref2 | Deref2 | Hd | Tl
+
 
 
 cons :: LTerm -> [LTerm] -> [LTerm]
@@ -40,20 +42,14 @@ cons hd tl = hd:tl
 
 instance Show LTerm where
   show (Var x) = x
-  show (Abs x y) = 
-    "λ" ++ x ++ ".(" ++ (show y) ++ ")" 
+  show (Abs x y) =  "λ" ++ x ++ ".(" ++ (show y) ++ ")" 
 
-  show (LInt x) = 
-    show x
-  show (List l) = 
-    List.intercalate ", " (List.map show l)
+  show (LInt x) = show x
+  show (List l) = List.intercalate ", " (List.map show l)
   
-  show (Let x y z) =
-    "let " ++ x ++ " = " ++ (show y) ++ " in " ++ (show z)
-  show (IfZ x y z) =
-    "ifZero " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
-  show (IfE x y z) =
-    "ifEmpty " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
+  show (Let x y z) = "let " ++ x ++ " = " ++ (show y) ++ " in " ++ (show z)
+  show (IfZ x y z) = "ifZero " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
+  show (IfE x y z) = "ifEmpty " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
 
   show Add = " + "
   show Sub = " - "
@@ -61,10 +57,18 @@ instance Show LTerm where
   show Hd = "hd"
   show Tl = "tl"
   show Fix = "fix"
+  show Ref = "ref"
+  show Deref = "!"
+  show Assign = ":="
 
-  show (App (App Add x) y) =  "( " ++ (show x) ++ (show Add) ++ (show y)  ++ " )"
+  show (Vaddr str) = str
+
+  show (App (App Add x) y)  = "( " ++ (show x) ++ (show Add) ++ (show y)  ++ " )"
   show (App (App Sub x) y)  = "( " ++ (show x) ++ (show Sub) ++ (show y)  ++ " )"
   show (App (App Cons x) y) = "( " ++ (show x) ++ (show Cons) ++ (show y) ++ " )"
+
+  show (App Deref x) = "!" ++ (show x)
+  show (App (App Assign x) y) = "( " ++ (show x) ++ (show Assign) ++ (show y) ++ " )"
 
   show (App Add x)  = (show x) -- ++ (show Add)
   show (App Sub x)  = (show x) -- ++ (show Sub)
@@ -99,10 +103,17 @@ alphaConv (App lterm1 lterm2) context n =
   let (newN1, newLterm1) = alphaConv lterm1 context n in
   let (newN2, newLterm2) = alphaConv lterm2 context newN1 in
     (newN2, App newLterm1 newLterm2)
-alphaConv (List l) context n = 
-  let (newN, newL) = (alphaConvList l context n []) in
-    (newN, List newL)
 
+alphaConv (IfZ lte1 lte2 lte3) context n =
+  let (newN1, newLTe1) = (alphaConv lte1 context n) in
+  let (newN2, newLTe2) = (alphaConv lte2 context newN1) in
+  let (newN3, newLTe3) = (alphaConv lte3 context newN2) in
+    (newN3 ,IfZ newLTe1 newLTe2 newLTe3)
+alphaConv (IfE lte1 lte2 lte3) context n =
+  let (newN1, newLTe1) = (alphaConv lte1 context n) in
+  let (newN2, newLTe2) = (alphaConv lte2 context newN1) in
+  let (newN3, newLTe3) = (alphaConv lte3 context newN2) in
+    (newN3 ,IfE newLTe1 newLTe2 newLTe3)
 alphaConv (Let str lte1 lte2) context n =
   let (newN1, newLTe1) = alphaConv lte1 newContext n
       newVStr = "x" ++ show newN1
@@ -111,17 +122,9 @@ alphaConv (Let str lte1 lte2) context n =
   in
     (newN2, Let newVStr newLTe1 newLTe2)  
 
-alphaConv (IfZ lte1 lte2 lte3) context n =
-  let (newN1, newLTe1) = (alphaConv lte1 context n) in
-  let (newN2, newLTe2) = (alphaConv lte2 context newN1) in
-  let (newN3, newLTe3) = (alphaConv lte3 context newN2) in
-    (newN3 ,IfZ newLTe1 newLTe2 newLTe3)
-
-alphaConv (IfE lte1 lte2 lte3) context n =
-  let (newN1, newLTe1) = (alphaConv lte1 context n) in
-  let (newN2, newLTe2) = (alphaConv lte2 context newN1) in
-  let (newN3, newLTe3) = (alphaConv lte3 context newN2) in
-    (newN3 ,IfE newLTe1 newLTe2 newLTe3)
+alphaConv (List l) context n = 
+  let (newN, newL) = (alphaConvList l context n []) in
+    (newN, List newL)
 
 alphaConv x _ n = (n, x)
 
@@ -137,113 +140,134 @@ instantiate varToRep newLT (Abs var body) =
 
 instantiate varToRep newLT (IfZ lte1 lte2 lte3) = 
   IfZ (instantiate varToRep newLT lte1) (instantiate varToRep newLT lte2)  (instantiate varToRep newLT lte3) 
-
 instantiate varToRep newLT (IfE lte1 lte2 lte3) = 
   IfE (instantiate varToRep newLT lte1) (instantiate varToRep newLT lte2)  (instantiate varToRep newLT lte3) 
-
 instantiate varToRep newLT (Let v lte1 lte2) = 
   Let v (instantiate varToRep newLT lte1) (instantiate varToRep newLT lte2) 
 
 instantiate varToRep newLT (List l) =
   List (List.map (instantiate varToRep newLT) l)
 
-
--- ?????
---instantiate varToRep newLT (Fix phi lte) =
---   Fix phi (instantiate varToRep newLT lte)
 instantiate _ _ x = x
 
 
-data EvalStepRes = EvalStepSuccess LTerm Int | EvalStepFailure LTerm String 
+data EvalContext = EvalContext (Map String LTerm) Int Int deriving Show
+
+data EvalFailureCause = EvaluationOver | EvaluationFailure String deriving Show
+
+data EvalStepRes = 
+  EvalStepSuccess LTerm EvalContext
+  | EvalStepFailure LTerm EvalFailureCause deriving Show
 
 getEvalStr :: String -> String -> String
 getEvalStr oldterm newterm =
   "( " ++ oldterm ++ " -> " ++ newterm ++ " )"
 
-evalApp :: LTerm -> LTerm -> Int -> EvalStepRes
-evalApp (Abs v body) arg n =
-  EvalStepSuccess (instantiate v arg body) n
+{-
+  given (App x y) and an EvalContext Ctx  
+  this function takes as input x y Ctx and evaluates the application
+  it's used by Eval_CBV_step
+-}
+evalApp :: LTerm -> LTerm -> EvalContext -> EvalStepRes
+evalApp (Abs v body) arg evCtx =
+  EvalStepSuccess (instantiate v arg body) evCtx
 
-evalApp (App Hd (List (x:_))) _ n =
-  EvalStepSuccess x n
-evalApp (App Tl (List (_:xs))) _ n =
-  EvalStepSuccess (List xs) n
+evalApp (App Hd (List (x:_))) _ evCtx =
+  EvalStepSuccess x evCtx
+evalApp (App Tl (List (_:xs))) _ evCtx =
+  EvalStepSuccess (List xs) evCtx
 
-evalApp (App Add (LInt arg1)) (LInt arg2) n = 
-  EvalStepSuccess (LInt (arg1 + arg2)) n
+evalApp (App Add (LInt arg1)) (LInt arg2) evCtx = 
+  EvalStepSuccess (LInt (arg1 + arg2)) evCtx
+evalApp (App Sub (LInt arg1)) (LInt arg2) evCtx = 
+  EvalStepSuccess (LInt (arg1 - arg2)) evCtx
 
-evalApp (App Sub (LInt arg1)) (LInt arg2) n = 
-  EvalStepSuccess (LInt (arg1 - arg2)) n
+evalApp (App Cons arg1) (List arg2) evCtx = 
+  EvalStepSuccess (List (arg1:arg2)) evCtx
 
-evalApp (App Cons arg1) (List arg2) n = 
-  EvalStepSuccess (List (arg1:arg2)) n
-
-evalApp (App Fix (Abs v body)) _ n =
+evalApp (App Fix (Abs v body)) _ (EvalContext ctx n pn) =
   let (newN, newLTy) = alphaConv body (Map.fromList []) n in
-  EvalStepSuccess (instantiate v newLTy body) newN
+    EvalStepSuccess (instantiate v newLTy body) (EvalContext ctx newN pn)
 
-evalApp f a _ = EvalStepFailure (App f a) "evalApp : unevaluable"
+evalApp (App Ref lte) _ (EvalContext ctx n pn) =
+  let newAddr = "p:" ++ show pn 
+      newCtx = Map.insert newAddr lte ctx
+  in 
+    EvalStepSuccess (Vaddr newAddr) (EvalContext newCtx n  (pn + 1))
 
-eval_CBV_step :: LTerm -> Int -> EvalStepRes  
-eval_CBV_step (App lte1 lte2) n =
-  case (eval_CBV_step lte1 n) of
-    EvalStepSuccess newLTe1 newN -> EvalStepSuccess (App newLTe1 lte2) newN
+evalApp (App Deref (Vaddr newAddr)) _ (EvalContext ctx n pn) =
+  case (Map.lookup newAddr ctx) of
+    Just x -> EvalStepSuccess x (EvalContext ctx n pn)
+    Nothing -> EvalStepFailure (App Deref (Var newAddr)) (EvaluationFailure "Deref failed: addr not in evaluation context")
+
+evalApp (App Assign (Var x)) lte (EvalContext ctx n pn) =
+  let newCtx = Map.insert x lte ctx in
+    EvalStepSuccess (Unit) (EvalContext newCtx n pn)
+
+evalApp f a _ = EvalStepFailure (App f a) (EvaluationFailure "evalApp : unevaluable")
+
+{-
+  Does one evaluation step
+-}
+eval_CBV_step :: LTerm -> EvalContext -> EvalStepRes  
+eval_CBV_step (App lte1 lte2) (EvalContext ctx n pn) =
+  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
+    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) -> 
+      EvalStepSuccess (App newLTe1 lte2) (EvalContext newctx newN newpn)
     EvalStepFailure _ _ ->(
-      case (eval_CBV_step lte2 n) of
-        EvalStepSuccess newLTe2 newN -> EvalStepSuccess (App lte1 newLTe2) newN
-        EvalStepFailure _ _ -> evalApp lte1 lte2 n)
+      case (eval_CBV_step lte2 (EvalContext ctx n pn)) of
+        EvalStepSuccess newLTe2 (EvalContext newctx newN newpn) ->
+          EvalStepSuccess (App lte1 newLTe2) (EvalContext newctx newN newpn)
+        EvalStepFailure _ _ -> 
+          --EvalStepFailure (App lte1 lte2) ( (show lte1) ++ "  " ++ (show lte2) ))
+          evalApp lte1 lte2 (EvalContext ctx n pn))
 
---data EvalStepRes = EvalStepSuccess LTerm | EvalStepFailure LTerm String 
-
-eval_CBV_step (Let x lte1 lte2) n =
-  case (eval_CBV_step lte1 n) of
-    EvalStepSuccess newLTe1 newN ->
-      EvalStepSuccess (Let x newLTe1 lte2) newN
+eval_CBV_step (Let x lte1 lte2) (EvalContext ctx n pn) =
+  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
+    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
+      EvalStepSuccess (Let x newLTe1 lte2) (EvalContext newctx newN newpn)
     EvalStepFailure _ _ -> 
       let newLTe2 = instantiate x lte1 lte2 in
-        EvalStepSuccess newLTe2 n
+        EvalStepSuccess newLTe2 (EvalContext ctx n pn)
 
-eval_CBV_step (IfZ lte1 lte2 lte3) n =
-  case (eval_CBV_step lte1 n) of
-    EvalStepSuccess newLTe1 newN -> EvalStepSuccess (IfZ newLTe1 lte2 lte3) newN
+eval_CBV_step (IfZ lte1 lte2 lte3) (EvalContext ctx n pn) =
+  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
+    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn)-> 
+      EvalStepSuccess (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
     EvalStepFailure _ _ ->
       case lte1 of 
         LInt x -> if x == 0 
-          then (EvalStepSuccess lte2 n) 
-          else (EvalStepSuccess lte3 n)
-        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) "Eval failure ifz" 
-{-
-  let (newLTe1, b) = eval_CBV_step lte1 in
-  if b == True then 
-    ((IfZ newLTe1 lte2 lte3), True)
-  else
-    case newLTe1 of 
-      LInt x -> 
-        if x == 0 
-          then (lte2, True)
-          else (lte3, True)
-      _ ->  (IfZ newLTe1 lte2 lte3, False)
--}
+          then (EvalStepSuccess lte2 (EvalContext ctx n pn)) 
+          else (EvalStepSuccess lte3 (EvalContext ctx n pn))
+        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ifz") 
 
-eval_CBV_step (IfE lte1 lte2 lte3) n =
-  case (eval_CBV_step lte1 n) of
-    EvalStepSuccess newLTe1 newN -> EvalStepSuccess (IfZ newLTe1 lte2 lte3) newN
+eval_CBV_step (IfE lte1 lte2 lte3) (EvalContext ctx n pn)=
+  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
+    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
+       EvalStepSuccess (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
     EvalStepFailure _ _ ->
       case lte1 of 
         LInt x -> if x == 0 
-          then (EvalStepSuccess lte2 n) 
-          else (EvalStepSuccess lte3 n)
-        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) "Eval failure ifz"
+          then (EvalStepSuccess lte2 (EvalContext ctx n pn)) 
+          else (EvalStepSuccess lte3 (EvalContext ctx n pn))
+        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ife")
 
-eval_CBV_step lte _ = EvalStepFailure lte "Evaluation Over"
+eval_CBV_step lte _  = EvalStepFailure lte EvaluationOver
 
-eval_CBV :: LTerm -> Int -> Int -> [String] -> ([String], LTerm, Bool)
-eval_CBV lte gas n acc 
+
+data EvalRes = 
+  EvalSuccess [String] LTerm 
+  | EvalFailure [String] LTerm String deriving Show
+
+eval_CBV :: LTerm -> Int -> [String] -> EvalContext -> EvalRes
+eval_CBV lte gas acc (EvalContext ctx n pn)
   | gas > 0 =
-    case (eval_CBV_step lte n) of
-      EvalStepSuccess newLTe newN -> 
-        eval_CBV newLTe (gas-1) newN (("( gas = " ++ (show gas ) ++ ", "++ (show lte) 
-        ++ " -> " ++ (show newLTe) ++ " ) "):acc)
-      EvalStepFailure newLTe msg -> (msg:(List.reverse acc), newLTe, False)
-  | otherwise = ("eval_CBV failure: N = 0":(List.reverse acc), lte, False)
-
+    case (eval_CBV_step lte (EvalContext ctx n pn)) of
+      EvalStepSuccess newLTe (EvalContext newctx newN newpn)-> 
+        eval_CBV newLTe (gas-1) (
+          ("( gas = " ++ (show gas ) ++ ", " ++ 
+          (show lte) ++ " -> " ++ (show newLTe) ++ " ) "):acc) (EvalContext newctx newN newpn)
+      EvalStepFailure newLTe (EvaluationFailure msg) -> 
+        EvalFailure (List.reverse acc) newLTe msg
+      EvalStepFailure newLTe EvaluationOver -> EvalSuccess (List.reverse acc) newLTe
+  | otherwise = EvalFailure (List.reverse acc) lte "eval_CBV failure: gas = 0"

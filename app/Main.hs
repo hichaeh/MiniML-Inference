@@ -1,13 +1,33 @@
 module Main where
 
---import Types
---import Terms 
---import Data.Map as Map
+import Types
+import Terms 
+import Data.Map as Map
+
+test1 :: Int -> IO ()
+test1 gas = 
+  let x = Let "x" (LInt 5) (Let "y" (Abs "x" (Var "x")) (App (Var "y") ( App (App Add (Var "x")) (LInt 5) ) ))
+      y = (alphaConv x (Map.fromList []) 1)
+      z = eval_CBV (snd y) gas [] (EvalContext (Map.fromList []) (fst y) 1)
+  in 
+    putStrLn (show z ++ show (typeDetection (snd y)))
+
+test2 :: Int -> IO ()
+test2 gas = 
+  let x = App (App Assign (Var "x")) (LInt 5)
+      y = (alphaConv x (Map.fromList []) 1)
+      z = eval_CBV (snd y) gas [] (EvalContext (Map.fromList []) (fst y) 1)
+  in 
+    putStrLn (show z)
+
+
 
 main :: IO ()
 main =
-  putStrLn ("\n teste \n")
-
+  do
+  test1 10
+  test2 10
+  
 
 {-
 let x = 
@@ -17,7 +37,8 @@ let x =
     )
   )
 let acx = (alphaConv x (Map.fromList []) 1)
-eval_CBV (snd acx) 14 (fst acx) []
+eval_CBV (snd y) 14 (fst y) [] (EvalContext (Map.fromList []) 1)
+
 
 (["Evaluation End",
 "( gas = 14, let x1 = 5 in let x3 = \955x2.(x2) in (x3 ( x1 + 5 )) 
