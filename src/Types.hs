@@ -71,7 +71,7 @@ alphaConvTypes (TArrow x y) ctx n =
 
 alphaConvTypes (TList lty) ctx n = 
   let (newn, newlty) = alphaConvTypes lty ctx n in
-     (newn, newlty)
+     (newn, TList newlty)
 
 alphaConvTypes (TRef lty) ctx n = 
   let (newn, newlty) = alphaConvTypes lty ctx n in
@@ -151,7 +151,7 @@ genEquas (IfE lte1 lte2 lte3) lty n context =
     (newN3, (LTypeEqua lty newTn):(newEqs1 ++ newEqs2 ++ newEqs3))
 genEquas (Let v lte1 lte2) lty n context = 
   case (typeDetection lte1) of 
-    TypeDetectionSuccess _ newLTy ->
+    TypeDetectionSuccess _ _ newLTy ->
       case (isNonExpansible lte1) of
         True ->
           let newContext = Map.insert v (generalise context newLTy) context in
@@ -159,7 +159,7 @@ genEquas (Let v lte1 lte2) lty n context =
         False ->
           let newContext = Map.insert v (weakGeneralise context newLTy) context in
             genEquas lte2 lty n newContext
-    TypeDetectionFailure _ str -> error ("genEquas failure 1:" ++ str)
+    TypeDetectionFailure _ _ str -> error ("genEquas failure 1:" ++ str)
 
 genEquas Add lty n _ =
   (n, (LTypeEqua lty (TArrow (TArrow TInt TInt) TInt)):[])
@@ -201,20 +201,27 @@ genEquas _ _ _ _ = error "genEquas"
 isNonExpansible :: LTerm -> Bool
 isNonExpansible (LInt _) = True
 isNonExpansible (Abs _ _ ) = True
+isNonExpansible Unit = True
 
 isNonExpansible (Let _ val body) = 
   isNonExpansible val && isNonExpansible body
 
 isNonExpansible (App Fix l) =
   isNonExpansible l
+isNonExpansible (App Hd l) =
+  isNonExpansible l
+isNonExpansible (App Tl l) =
+  isNonExpansible l
+isNonExpansible (App Deref l) =
+  isNonExpansible l
 
 isNonExpansible (App x y) =
   isNonExpansible x && isNonExpansible y
 
-isNonExpansible (IfZ x y z) =
-  isNonExpansible x && isNonExpansible y && isNonExpansible z
-isNonExpansible (IfE x y z) =
-  isNonExpansible x && isNonExpansible y && isNonExpansible z
+isNonExpansible (IfZ _ y z) =
+  isNonExpansible y && isNonExpansible z
+isNonExpansible (IfE _ y z) =
+  isNonExpansible y && isNonExpansible z
 
 isNonExpansible _ =  False
 
@@ -313,8 +320,8 @@ tarrowUnification x y =
 
 data UnifStepRes = 
     UnifStepSuccess [LTypeEqua] 
-  | UnifOver LTypeEqua 
-  | UnifStepFailure String
+--  | UnifOver LTypeEqua 
+  | UnifStepFailure String deriving Show
 
 unificationStep :: [LTypeEqua] -> LType -> Int -> UnifStepRes
 
@@ -339,38 +346,21 @@ unificationStep :: [LTypeEqua] -> LType -> Int -> UnifStepRes
   unificationStep ((LTypeEqua (TList z) TInt):[]) _ =
     UnifStepFailure ("Incompatible types : " ++ show (TList z) 
                                   ++ " and " ++ show TInt)
-
 -}
 
-unificationStep ((LTypeEqua (TVar x) td):tl2) ltyf _
-  | (TVar x) == ltyf || td == ltyf = 
-    UnifStepSuccess (tl2 ++ (LTypeEqua (TVar x) td):[]) 
-  | TVar x == td = UnifStepSuccess tl2
+{-
+unificationStep ((LTypeEqua (TVar x) td):[]) ltyf _
+  | (TVar x) == ltyf || td == ltyf = UnifOver (LTypeEqua (TVar x) td)
+  | TVar x == td = UnifStepFailure "Empty list 1.1"
   | occurCheck x td = UnifStepFailure ((show x) ++ " occurs in " ++ show td)
-  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x td) tl2)
-unificationStep ((LTypeEqua tg (TVar x)):tl2) ltyf _
-  | tg == ltyf || (TVar x) == ltyf = 
-    UnifStepSuccess (tl2 ++ (LTypeEqua tg (TVar x)):[])
-  | TVar x == tg = UnifStepSuccess tl2
+  | otherwise = UnifOver (LTypeEqua (TVar x) td)
+unificationStep ((LTypeEqua tg (TVar x)):[]) ltyf _
+  | (TVar x) == ltyf || tg == ltyf = UnifOver (LTypeEqua (TVar x) tg)
+  | TVar x == tg = UnifStepFailure "Empty list 1.2"
   | occurCheck x tg = UnifStepFailure ((show x) ++ " occurs in " ++ show tg)
-  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x tg) tl2)
+  | otherwise = UnifOver (LTypeEqua (TVar x) tg)
+-}
 
-unificationStep ((LTypeEqua (TArrow ltya1 ltyb1) (TArrow ltya2 ltyb2)):[]) _ _
-  | (TArrow ltya1 ltyb1) == (TArrow ltya2 ltyb2) = UnifStepFailure "EmpTY LisT 1"
-  | otherwise =
-    case (tarrowIsCorrect (TArrow ltya1 ltyb1), tarrowIsCorrect (TArrow ltya2 ltyb2)) of
-      (True, True) ->
-        UnifStepSuccess ((tarrowUnification (TArrow ltya1 ltyb1) (TArrow ltya2 ltyb2)) ++ [])
-      (True, False) ->
-        let newTArr2 = tarrowFromList $ tarrowToList (TArrow ltya2 ltyb2) in
-          UnifStepSuccess ((tarrowUnification (TArrow ltya1 ltyb1) newTArr2) ++ [])
-      (False, True) ->
-        let newTArr1 = tarrowFromList $ tarrowToList (TArrow ltya1 ltyb1) in
-          UnifStepSuccess ((tarrowUnification newTArr1 (TArrow ltya2 ltyb2)) ++ [])
-      (False, False) ->
-        let newTArr1 = tarrowFromList $ tarrowToList (TArrow ltya1 ltyb1) 
-            newTArr2 = tarrowFromList $ tarrowToList (TArrow ltya2 ltyb2)in
-          UnifStepSuccess ((tarrowUnification newTArr1 newTArr2) ++ [])
 unificationStep ((LTypeEqua (TArrow ltya1 ltyb1) (TArrow ltya2 ltyb2)):tl2) ltyf n
   | (TArrow ltya1 ltyb1) == (TArrow ltya2 ltyb2) = unificationStep tl2 ltyf n
   | otherwise =
@@ -388,9 +378,28 @@ unificationStep ((LTypeEqua (TArrow ltya1 ltyb1) (TArrow ltya2 ltyb2)):tl2) ltyf
             newTArr2 = tarrowFromList $ tarrowToList (TArrow ltya2 ltyb2)in
           UnifStepSuccess ((tarrowUnification newTArr1 newTArr2) ++ tl2)
 
+
+
+unificationStep ((LTypeEqua (TVar x) td):tl2) ltyf _
+  | (TVar x) == ltyf || td == ltyf = UnifStepSuccess (tl2 ++ (LTypeEqua (TVar x) td):[]) 
+  | TVar x == td = UnifStepSuccess tl2
+  | occurCheck x td = UnifStepFailure ((show x) ++ " occurs in " ++ show td)
+  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x td) tl2)
+unificationStep ((LTypeEqua tg (TVar x)):tl2) ltyf _
+  | tg == ltyf || (TVar x) == ltyf = UnifStepSuccess (tl2 ++ (LTypeEqua tg (TVar x)):[])
+  | TVar x == tg = UnifStepSuccess tl2
+  | occurCheck x tg = UnifStepFailure ((show x) ++ " occurs in " ++ show tg)
+  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x tg) tl2)
+
+{-
+unificationStep ((LTypeEqua (TPoly v lty) td):[]) _ n
+  | (TPoly v lty) == td = UnifStepFailure "Empty list 2.1"
+  | otherwise = 
+    let (_, newlty) = alphaConvTypes lty (Map.fromList []) n in
+      UnifOver (LTypeEqua newlty td)
+-}
 unificationStep ((LTypeEqua (TPoly v lty) td):tl2) _ n
-  | (TPoly v lty) == td = 
-    UnifStepSuccess tl2
+  | (TPoly v lty) == td = UnifStepSuccess tl2
   | otherwise = 
     let (_, newlty) = alphaConvTypes lty (Map.fromList []) n in
       UnifStepSuccess ((LTypeEqua newlty td):tl2)
@@ -406,12 +415,10 @@ unificationStep ((LTypeEqua (TList lty1) (TList lty2)):tl2) _ _
 
 unificationStep ((LTypeEqua (WF b v lty) td):tl2) _ _
   | (WF b v lty) == td = UnifStepSuccess tl2
-  | otherwise =
-    UnifStepSuccess ((LTypeEqua lty td):tl2)
+  | otherwise = UnifStepSuccess ((LTypeEqua lty td):tl2)
 unificationStep ((LTypeEqua tg (WF b v lty)):tl2) _ _
   | (WF b v lty) == tg = UnifStepSuccess tl2
-  | otherwise =
-    UnifStepSuccess ((LTypeEqua lty tg):tl2)
+  | otherwise = UnifStepSuccess ((LTypeEqua lty tg):tl2)
 
 {-
 unificationStep ((LTypeEqua (WV b1 v1 lty1) (WV b2 v2 lty2)):tl2) _ _
@@ -429,10 +436,8 @@ unificationStep ((LTypeEqua (WV b1 v1 lty1) (WV b2 v2 lty2)):tl2) _ _
 unificationStep ((LTypeEqua (WV b v lty) td):tl2) _ _
   | (WF b v lty) == td = UnifStepSuccess tl2
   | occurCheck v td = UnifStepFailure ("WV : "++show v ++" occurs in " ++ show td)
-  | b == True =
-    UnifStepSuccess ((LTypeEqua lty td):tl2)
-  | otherwise =
-    UnifStepSuccess ((LTypeEqua (WV True v td) td):tl2)
+  | b == True = UnifStepSuccess ((LTypeEqua lty td):tl2)
+  | otherwise = UnifStepSuccess ((LTypeEqua (WV True v td) td):tl2)
 unificationStep ((LTypeEqua tg (WV b v lty)):tl2) _ _
   | (WF b v lty) == tg = UnifStepSuccess tl2
   | occurCheck v tg = UnifStepFailure ("WV : "++show v ++" occurs in " ++ show tg)
@@ -440,7 +445,6 @@ unificationStep ((LTypeEqua tg (WV b v lty)):tl2) _ _
     UnifStepSuccess ((LTypeEqua tg lty):tl2)
   | otherwise =
     UnifStepSuccess ((LTypeEqua tg (WV True v tg)):tl2)
-
 
 unificationStep ((LTypeEqua (TRef lty1) (TRef lty2)):tl2) _ _
   | lty1 == lty2 = UnifStepSuccess tl2
@@ -452,27 +456,51 @@ unificationStep ((LTypeEqua x y):l) _ _
 
 unificationStep [] _ _ = UnifStepFailure "Empty list"
 
-
-
 showEqL :: [LTypeEqua] -> String
 showEqL l =  List.foldr (++) " " (List.map show l) 
 
 show2EqLs :: ([LTypeEqua], [LTypeEqua]) -> String 
 show2EqLs (l1,l2) = showEqL l1 ++ "\n ### \n" ++ showEqL l2
 
-
 data UnificationRes = 
-    UnifSuccess [(String, String)] LTypeEqua 
-   | UnifFailure [(String, String)] String deriving Show
+    UnifSuccess [String] LTypeEqua 
+   | UnifFailure [String] String deriving Show
 
-unifyEqsBis :: [LTypeEqua] -> [(String, String)] -> LType -> Int -> UnificationRes
-unifyEqsBis l strl lty n = 
+
+{-
+  Only works on the last equation in a sequence of equations
+  The equation must contain a type variable that represents the type we are
+  we are trying to guess
+-}
+isSimplifiable :: LTypeEqua -> Bool
+isSimplifiable (LTypeEqua (WF _ _ _) _) = True
+isSimplifiable (LTypeEqua _ (WF _ _ _)) = True
+
+isSimplifiable (LTypeEqua (WV _ _ _) _) = True
+isSimplifiable (LTypeEqua _ (WV _ _ _)) = True
+
+isSimplifiable (LTypeEqua (TPoly _ _) _) = True
+isSimplifiable (LTypeEqua _ (TPoly _ _)) = True
+
+isSimplifiable _ = False
+
+unifyEqs :: [LTypeEqua] -> [String] -> LType -> Int -> UnificationRes
+unifyEqs (x:[]) strl lty n 
+  | isSimplifiable x = 
+    case (unificationStep (x:[]) lty n) of
+      UnifStepSuccess newl -> 
+        unifyEqs newl ((show newl):strl) lty n
+      UnifStepFailure msg -> UnifFailure strl ("Unification failure (unifyEqs) : " ++ msg)
+      --UnifOver e -> UnifSuccess strl e 
+  | otherwise = UnifSuccess strl x
+unifyEqs l strl lty n = 
   case (unificationStep l lty n) of
     UnifStepSuccess newl -> 
-      unifyEqsBis newl ((show l, show newl):strl) lty n
-    UnifStepFailure msg -> UnifFailure strl ("Unification failure (unifyEqsBis) : " ++ msg)
-    UnifOver e -> UnifSuccess strl e 
+      unifyEqs newl ((show newl):strl) lty n
+    UnifStepFailure msg -> UnifFailure strl ("Unification failure (unifyEqs) : " ++ msg)
+    --UnifOver e -> UnifSuccess strl e 
 
+{-
 unifyEqs :: [LTypeEqua] -> LType -> Int -> IO ()
 unifyEqs l lty n = 
   case (unificationStep l lty n) of
@@ -482,8 +510,8 @@ unifyEqs l lty n =
         putStrLn $ show newl ++ "\n"
         unifyEqs newl lty n
     UnifStepFailure msg -> putStrLn ("Unification failure (unifyEqs) : " ++ msg)
-    UnifOver e -> putStrLn ("Unification over: " ++ show e)
-
+    --UnifOver e -> putStrLn ("Unification over: " ++ show e)
+-}
 
 getType :: LTypeEqua -> LType -> LType
 getType (LTypeEqua x y) lty 
@@ -492,15 +520,28 @@ getType (LTypeEqua x y) lty
   | otherwise = error (show lty ++ " not present in " ++ show (LTypeEqua x y))
 
 data TypeDetectionRes = 
-    TypeDetectionSuccess [(String, String)] LType
-  | TypeDetectionFailure [(String, String)] String deriving Show
+    TypeDetectionSuccess [String] LTerm LType
+  | TypeDetectionFailure [String] LTerm String 
+
+--List.intercalate "___" $ List.map (++ "\n") ("1":"2":"3":"4":[])
+--"1\n___2\n___3\n___4\n"
+instance Show TypeDetectionRes where
+  show (TypeDetectionSuccess l lte lty) =
+    "Type inference of : " ++ show lte ++ "\n\n" ++
+    (List.intercalate "\n" l) ++ "\n\n" ++
+    "Type inference of : "  ++ show lte ++ " : " ++ show lty ++ "\n"
+  
+  show (TypeDetectionFailure l lte msg) =
+    "Type inference of : " ++ show lte ++ "\n\n" ++
+    (List.intercalate "\n" l) ++ "\n\n" ++
+    "Type inference of : "  ++ show lte ++ " failed : " ++ msg
 
 typeDetection :: LTerm -> TypeDetectionRes
 typeDetection lte = 
   let lty = TVar "T0" in
   let (n, eqs) = (genEquas lte lty 1 (Map.fromList []) ) in
-    case (unifyEqsBis eqs [] lty n) of
-      UnifSuccess strl resEq -> TypeDetectionSuccess strl (getType resEq lty)
-      UnifFailure strl msg   -> TypeDetectionFailure strl msg
+    case (unifyEqs eqs ((show eqs):[]) lty n) of
+      UnifSuccess strl resEq -> TypeDetectionSuccess (List.reverse strl) lte (getType resEq lty)
+      UnifFailure strl msg   -> TypeDetectionFailure (List.reverse strl) lte msg
 
 

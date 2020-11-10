@@ -290,14 +290,16 @@ printEvalRes (EvalFailure l _ msg) =
     putStrLn ("Evaluation failed : " ++ msg)
 
 eval_CBV :: LTerm -> Int -> [String] -> EvalContext -> EvalRes
-eval_CBV lte gas acc (EvalContext ctx n pn)
-  | gas > 0 =
+eval_CBV lte maxnbsteps acc (EvalContext ctx n pn)
+  | maxnbsteps > 0 =
     case (eval_CBV_step lte (EvalContext ctx n pn)) of
       EvalStepSuccess newLTe (EvalContext newctx newN newpn)-> 
-        eval_CBV newLTe (gas-1) (
-          ("( gas = " ++ (show gas ) ++ ", " ++ 
-          (show lte) ++ " -> " ++ (show newLTe) ++ " ) "):acc) (EvalContext newctx newN newpn)
+        eval_CBV newLTe (maxnbsteps-1) (( (show maxnbsteps ) ++ " | " ++ 
+        (show newLTe)):acc) (EvalContext newctx newN newpn)
+        --eval_CBV newLTe (maxnbsteps-1) (
+        --  ("( steps left = " ++ (show maxnbsteps ) ++ ", " ++ 
+        --  (show lte) ++ " -> " ++ (show newLTe) ++ " ) "):acc) (EvalContext newctx newN newpn)
       EvalStepFailure newLTe (EvaluationFailure msg) -> 
         EvalFailure (List.reverse acc) newLTe msg
       EvalStepFailure newLTe EvaluationOver -> EvalSuccess (List.reverse acc) newLTe
-  | otherwise = EvalFailure (List.reverse acc) lte "eval_CBV failure: gas = 0"
+  | otherwise = EvalFailure (List.reverse acc) lte "eval_CBV failure: maxnbsteps = 0"
