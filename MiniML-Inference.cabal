@@ -64,4 +64,5 @@ test-suite MiniML-Inference-test
       MiniML-Inference
     , base >=4.7 && <5
     , containers
+    , hspec
   default-language: Haskell2010

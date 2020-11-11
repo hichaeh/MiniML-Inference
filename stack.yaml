@@ -20,8 +20,8 @@
 resolver : ghc-8.6.5
 #resolver: 
 #  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/20.yaml
-ghc-options:
-  "$everything": -haddock
+# ghc-options:
+#  "$everything": -haddock
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
