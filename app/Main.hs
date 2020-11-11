@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Map as Map
+import Funcs
 import Terms
 import Types
 
@@ -8,21 +9,21 @@ evaltest1 :: Int -> IO ()
 evaltest1 maxnbsteps =
   let x = Let "x" (LInt 5) (Let "y" (Abs "x" (Var "x")) (App (Var "y") (App (App Add (Var "x")) (LInt 5))))
       y = (alphaConv x (Map.fromList []) 1)
-      z = eval_CBV (snd y) maxnbsteps ((show (snd y)) : []) (EvalContext (Map.fromList []) (fst y) 1)
+      z = eval_CBV (snd y) maxnbsteps
    in putStrLn (show z ++ show (typeDetection (snd y)))
 
 evaltest2 :: Int -> IO ()
 evaltest2 maxnbsteps =
   let x = App (App Assign (Var "x")) (LInt 5)
       y = (alphaConv x (Map.fromList []) 1)
-      z = eval_CBV (snd y) maxnbsteps ((show (snd y)) : []) (EvalContext (Map.fromList []) (fst y) 1)
+      z = eval_CBV (snd y) maxnbsteps
    in putStrLn (show z)
 
 evaltest3 :: Int -> Int -> IO ()
 evaltest3 maxnbsteps v =
   let x = App ((App Fix (Abs "sum" (Abs "x" (IfZ (Var "x") (LInt 0) (App (App Add (Var "x")) (App (Var "sum") (App (App Sub (Var "x")) (LInt 1))))))))) (LInt v)
       y = (alphaConv x (Map.fromList []) 1)
-      z = eval_CBV (snd y) maxnbsteps ((show (snd y)) : []) (EvalContext (Map.fromList []) (fst y) 1)
+      z = eval_CBV (snd y) maxnbsteps
    in do
         putStrLn ("\n\nEvaluation of : " ++ show x)
         printEvalRes z
@@ -42,13 +43,24 @@ infertest3 () =
   let x = App (App Assign (Var "x")) (LInt 5)
    in putStrLn (show $ typeDetection x)
 
+doEval :: LTerm -> Int -> IO ()
+doEval lte maxnbsteps =
+  putStrLn $ show $ eval_CBV lte maxnbsteps
+
+doType :: LTerm -> IO ()
+doType lte = putStrLn $ show $ typeDetection lte
+
 main :: IO ()
 main =
   do
     --test1 10
     --test2 10
     --evaltest3 100 5
-    infertest1 ()
+    --infertest1 ()
+    doType (lt_sum_0toN ())
+    doEval (lt_sum_0toN ()) 250
+    doType (lt_sum_0toN_App 5)
+    doEval (lt_sum_0toN_App 5) 250
 
 {-
 

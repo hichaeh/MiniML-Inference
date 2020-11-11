@@ -41,6 +41,27 @@ packages:
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
+
+# add 'allow-newer: true' to .stack/config.yaml
+#extra-deps:
+ # for hspec to work :
+#- hspec-2.7.4
+#- QuickCheck-2.12
+#- hspec-core-2.7.4
+#- hspec-discover-2.7.4
+#- hspec-expectations-0.8.2
+#- HUnit-1.6.0.0
+#- ansi-terminal-0.11
+#- call-stack-0.2.0
+#- clock-0.8
+#- erf-2.0.0.0
+#- quickcheck-io-0.2.0
+#- random-1.1
+#- setenv-0.1.1.3
+#- tf-random-0.5
+#- colour-2.3.5
+#- primitive-0.7.1.0
+
 #
 # extra-deps: []
 

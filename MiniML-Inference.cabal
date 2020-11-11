@@ -30,6 +30,7 @@ library
       Lib
       , Terms
       , Types
+      , Funcs
   other-modules:
       Paths_MiniML_Inference
   hs-source-dirs:
@@ -64,5 +65,7 @@ test-suite MiniML-Inference-test
       MiniML-Inference
     , base >=4.7 && <5
     , containers
-    , hspec
+  --  , hspec
+  --  , quickcheck
+  --  , random
   default-language: Haskell2010
