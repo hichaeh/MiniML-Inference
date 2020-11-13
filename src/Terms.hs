@@ -30,12 +30,12 @@ cons hd tl = hd : tl
 
 instance Show LTerm where
   show (Var x) = x
-  show (Abs x y) = "λ" ++ x ++ ".(" ++ (show y) ++ ")"
+  show (Abs x y) = "λ" ++ x ++ ".(" ++ show y ++ ")"
   show (LInt x) = show x
   show (List l) = "[" ++ List.intercalate ", " (List.map show l) ++ "]"
-  show (Let x y z) = "let " ++ x ++ " = " ++ (show y) ++ " in " ++ (show z)
-  show (IfZ x y z) = "ifZero " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
-  show (IfE x y z) = "ifEmpty " ++ (show x) ++ " then " ++ (show y) ++ " else " ++ (show z)
+  show (Let x y z) = "let " ++ x ++ " = " ++ show y ++ " in " ++ show z
+  show (IfZ x y z) = "ifZero " ++ show x ++ " then " ++ show y ++ " else " ++ show z
+  show (IfE x y z) = "ifEmpty " ++ show x ++ " then " ++ show y ++ " else " ++ show z
   show Add = " + "
   show Sub = " - "
   show Cons = "::"
@@ -46,28 +46,27 @@ instance Show LTerm where
   show Deref = "!"
   show Assign = ":="
   show (Vaddr str) = str
-  show (App (App Add x) y) = "( " ++ (show x) ++ (show Add) ++ (show y) ++ " )"
-  show (App (App Sub x) y) = "( " ++ (show x) ++ (show Sub) ++ (show y) ++ " )"
-  show (App (App Cons x) y) = "( " ++ (show x) ++ (show Cons) ++ (show y) ++ " )"
-  show (App Deref x) = "!" ++ (show x)
-  show (App (App Assign x) y) = "( " ++ (show x) ++ (show Assign) ++ (show y) ++ " )"
-  show (App Add x) = (show x) -- ++ (show Add)
-  show (App Sub x) = (show x) -- ++ (show Sub)
-  show (App Cons x) = (show x) -- ++ (show Cons)
+  show (App (App Add x) y) = "( " ++ show x ++ show Add ++ show y ++ " )"
+  show (App (App Sub x) y) = "( " ++ show x ++ show Sub ++ show y ++ " )"
+  show (App (App Cons x) y) = "( " ++ show x ++ show Cons ++ show y ++ " )"
+  show (App Deref x) = "!" ++ show x
+  show (App (App Assign x) y) = "( " ++ show x ++ show Assign ++ show y ++ " )"
+  show (App Add x) = "(+) " ++ show x
+  show (App Sub x) = "(-) " ++ show x
+  show (App Cons x) = "(cons) " ++ show x
   show Unit = "□"
-  show (App x y) = "(" ++ (show x) ++ " " ++ (show y) ++ ")"
+  show (App x y) = "(" ++ show x ++ " " ++ show y ++ ")"
 
 alphaConvList :: [LTerm] -> Map String String -> Int -> [LTerm] -> (Int, [LTerm])
 alphaConvList ((Var str) : tl) context n acc =
-  case (Map.lookup str context) of
-    Just x -> alphaConvList tl context n ((Var x) : acc)
-    Nothing -> alphaConvList tl (Map.insert str ("x" ++ (show n)) context) (n + 1) ((Var ("x" ++ (show n))) : acc)
+  case Map.lookup str context of
+    Just x -> alphaConvList tl context n (Var x : acc)
+    Nothing -> alphaConvList tl (Map.insert str ("x" ++ show n) context) (n + 1) (Var ("x" ++ show n) : acc)
 alphaConvList (hd : tl) context n acc =
-  let (newN, newLT) = (alphaConv hd context n)
+  let (newN, newLT) = alphaConv hd context n
    in alphaConvList tl context newN (newLT : acc)
 alphaConvList [] _ n acc = (n, List.reverse acc)
 
---
 alphaConv :: LTerm -> Map String String -> Int -> (Int, LTerm)
 alphaConv (Var v) context n =
   case Map.lookup v context of
@@ -82,23 +81,23 @@ alphaConv (App lterm1 lterm2) context n =
    in let (newN2, newLterm2) = alphaConv lterm2 context newN1
        in (newN2, App newLterm1 newLterm2)
 alphaConv (IfZ lte1 lte2 lte3) context n =
-  let (newN1, newLTe1) = (alphaConv lte1 context n)
-   in let (newN2, newLTe2) = (alphaConv lte2 context newN1)
-       in let (newN3, newLTe3) = (alphaConv lte3 context newN2)
+  let (newN1, newLTe1) = alphaConv lte1 context n
+   in let (newN2, newLTe2) = alphaConv lte2 context newN1
+       in let (newN3, newLTe3) = alphaConv lte3 context newN2
            in (newN3, IfZ newLTe1 newLTe2 newLTe3)
 alphaConv (IfE lte1 lte2 lte3) context n =
-  let (newN1, newLTe1) = (alphaConv lte1 context n)
-   in let (newN2, newLTe2) = (alphaConv lte2 context newN1)
-       in let (newN3, newLTe3) = (alphaConv lte3 context newN2)
+  let (newN1, newLTe1) = alphaConv lte1 context n
+   in let (newN2, newLTe2) = alphaConv lte2 context newN1
+       in let (newN3, newLTe3) = alphaConv lte3 context newN2
            in (newN3, IfE newLTe1 newLTe2 newLTe3)
 alphaConv (Let str lte1 lte2) context n =
   let (newN1, newLTe1) = alphaConv lte1 newContext n
       newVStr = "x" ++ show newN1
-      newContext = (Map.insert str newVStr context)
+      newContext = Map.insert str newVStr context
       (newN2, newLTe2) = alphaConv lte2 newContext (newN1 + 1)
    in (newN2, Let newVStr newLTe1 newLTe2)
 alphaConv (List l) context n =
-  let (newN, newL) = (alphaConvList l context n [])
+  let (newN, newL) = alphaConvList l context n []
    in (newN, List newL)
 alphaConv x _ n = (n, x)
 
@@ -123,15 +122,15 @@ instantiate _ _ x = x
 
 data EvalContext = EvalContext (Map String LTerm) Int Int deriving (Show)
 
-makeEvalContext :: () -> EvalContext
-makeEvalContext () = EvalContext (Map.fromList []) 1 1
-
-data EvalFailureCause = EvaluationOver | EvaluationFailure String deriving (Show)
+data EvalStopCause = EvaluationOver | EvaluationFailure String deriving (Show)
 
 data EvalStepRes
-  = EvalStepSuccess LTerm EvalContext
-  | EvalStepFailure LTerm EvalFailureCause
+  = EvalContinues LTerm EvalContext
+  | EvalStops LTerm EvalStopCause
   deriving (Show)
+
+makeEvalContext :: () -> EvalContext
+makeEvalContext () = EvalContext Map.empty 1 1
 
 getEvalStr :: String -> String -> String
 getEvalStr oldterm newterm =
@@ -140,141 +139,363 @@ getEvalStr oldterm newterm =
 {-
   given (App x y) and an EvalContext Ctx
   this function takes as input x y Ctx and evaluates the application
-  it's used by Eval_CBV_step
+  it's used by evalCBVstep
 -}
+evaluable :: LTerm -> Bool
+evaluable App {} = True
+evaluable IfE {} = True
+evaluable IfZ {} = True
+evaluable _ = False
+
 evalApp :: LTerm -> LTerm -> EvalContext -> EvalStepRes
 evalApp (Abs v body) arg evCtx =
-  EvalStepSuccess (instantiate v arg body) evCtx
+  EvalContinues (instantiate v arg body) evCtx
+--------------------------------------------------------------------------------------------------
 evalApp (App Hd (List (x : _))) _ evCtx =
-  EvalStepSuccess x evCtx
+  EvalContinues x evCtx
+evalApp (App Hd x) _ evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App Hd newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App Hd newlte) stpc
+  | otherwise = EvalStops (App Hd x) (EvaluationFailure "[[[failcause1]]]")
+evalApp Hd (List (x : _)) evCtx =
+  EvalContinues x evCtx
+evalApp Hd x evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App Hd newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App Hd newlte) stpc
+  | otherwise = EvalStops (App Hd x) (EvaluationFailure "[[[failcause1]]]")
+--------------------------------------------------------------------------------------------------
 evalApp (App Tl (List (_ : xs))) _ evCtx =
-  EvalStepSuccess (List xs) evCtx
+  EvalContinues (List xs) evCtx
+evalApp (App Tl x) _ evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App Tl newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App Tl newlte) stpc
+  | otherwise = EvalStops (App Tl x) (EvaluationFailure "[[[failcause2]]]")
+evalApp Tl (List (_ : xs)) evCtx =
+  EvalContinues (List xs) evCtx
+evalApp Tl x evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App Tl newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App Tl newlte) stpc
+  | otherwise = EvalStops (App Tl x) (EvaluationFailure "[[[failcause2]]]")
+--------------------------------------------------------------------------------------------------
 evalApp (App Add (LInt arg1)) (LInt arg2) evCtx =
-  EvalStepSuccess (LInt (arg1 + arg2)) evCtx
+  EvalContinues (LInt (arg1 + arg2)) evCtx
+evalApp (App Add (LInt arg1)) x evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Add (LInt arg1)) newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Add (LInt arg1)) newlte) stpc
+  | otherwise = EvalStops (App (App Add (LInt arg1)) x) (EvaluationFailure "[[[failcause:3.1]]]")
+evalApp (App Add x) (LInt arg2) evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Add newlte) (LInt arg2)) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Add newlte) (LInt arg2)) stpc
+  | otherwise = EvalStops (App (App Add x) (LInt arg2)) (EvaluationFailure "[[[failcause:3.2]]]")
+--------------------------------------------------------------------------------------------------
 evalApp (App Sub (LInt arg1)) (LInt arg2) evCtx =
-  EvalStepSuccess (LInt (arg1 - arg2)) evCtx
+  EvalContinues (LInt (arg1 - arg2)) evCtx
+evalApp (App Sub (LInt arg1)) x evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Sub (LInt arg1)) newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Sub (LInt arg1)) newlte) stpc
+  | otherwise = EvalStops (App (App Sub (LInt arg1)) x) (EvaluationFailure "[[[failcause:4.1]]]")
+evalApp (App Sub x) (LInt arg2) evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Sub newlte) (LInt arg2)) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Sub newlte) (LInt arg2)) stpc
+  | otherwise = EvalStops (App (App Sub x) (LInt arg2)) (EvaluationFailure "[[[failcause:4.2]]]")
+--------------------------------------------------------------------------------------------------
 evalApp (App Cons arg1) (List arg2) evCtx =
-  EvalStepSuccess (List (arg1 : arg2)) evCtx
+  EvalContinues (List (arg1 : arg2)) evCtx
+evalApp (App Cons (LInt arg1)) x evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Cons (LInt arg1)) newlte) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Cons (LInt arg1)) newlte) stpc
+  | otherwise = EvalStops (App (App Cons (LInt arg1)) x) (EvaluationFailure "[[[failcause:5.1]]]")
+evalApp (App Cons x) (LInt arg2) evCtx
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalContinues newlte newctx ->
+        EvalContinues (App (App Cons newlte) (LInt arg2)) newctx
+      EvalStops newlte stpc ->
+        EvalStops (App (App Cons newlte) (LInt arg2)) stpc
+  | otherwise = EvalStops (App (App Cons x) (LInt arg2)) (EvaluationFailure "[[[failcause:5.2]]]")
+evalApp (App Cons x) y evCtx
+  | evaluable x && evaluable y =
+    case evalCBVstep x evCtx of
+      EvalStops newlte stpc ->
+        EvalStops (App (App Cons newlte) y) stpc
+      EvalContinues newlte1 newctx1 ->
+        case evalCBVstep y newctx1 of
+          EvalContinues newlte2 newctx2 ->
+            EvalContinues (App (App Cons newlte1) newlte2) newctx2
+          EvalStops newlte stpc ->
+            EvalStops (App (App Cons newlte1) newlte) stpc
+  | evaluable x =
+    case evalCBVstep x evCtx of
+      EvalStops newlte stpc ->
+        EvalStops (App (App Cons newlte) y) stpc
+      EvalContinues newlte1 newctx1 ->
+        EvalContinues (App (App Cons newlte1) y) newctx1
+  | evaluable y =
+    case evalCBVstep y evCtx of
+      EvalStops newlte stpc ->
+        EvalStops (App (App Cons newlte) y) stpc
+      EvalContinues newlte1 newctx1 ->
+        EvalContinues (App (App Cons x) newlte1) newctx1
+  | otherwise = EvalStops (App (App Cons x) y) (EvaluationFailure "[[[failcause:5.3]]]")
+--------------------------------------------------------------------------------------------------
 evalApp (App Fix (Abs v body)) arg (EvalContext ctx n pn) =
-  let (newN, newLTy) = alphaConv body (Map.fromList []) n
-   in EvalStepSuccess (App (instantiate v (App Fix (Abs v body)) newLTy) arg) (EvalContext ctx newN pn)
+  let (newN, newLTy) = alphaConv body Map.empty n
+   in EvalContinues (App (instantiate v (App Fix (Abs v body)) newLTy) arg) (EvalContext ctx newN pn)
 evalApp (App Ref lte) _ (EvalContext ctx n pn) =
   let newAddr = "p:" ++ show pn
       newCtx = Map.insert newAddr lte ctx
-   in EvalStepSuccess (Vaddr newAddr) (EvalContext newCtx n (pn + 1))
+   in EvalContinues (Vaddr newAddr) (EvalContext newCtx n (pn + 1))
+evalApp Ref lte (EvalContext ctx n pn) =
+  let newAddr = "p:" ++ show pn
+      newCtx = Map.insert newAddr lte ctx
+   in EvalContinues (Vaddr newAddr) (EvalContext newCtx n (pn + 1))
 evalApp (App Deref (Vaddr newAddr)) _ (EvalContext ctx n pn) =
-  case (Map.lookup newAddr ctx) of
-    Just x -> EvalStepSuccess x (EvalContext ctx n pn)
-    Nothing -> EvalStepFailure (App Deref (Var newAddr)) (EvaluationFailure "Deref failed: addr not in evaluation context")
+  case Map.lookup newAddr ctx of
+    Just x -> EvalContinues x (EvalContext ctx n pn)
+    Nothing -> EvalStops (App Deref (Var newAddr)) (EvaluationFailure "Deref failed: addr not in evaluation context")
+evalApp Deref (Vaddr newAddr) (EvalContext ctx n pn) =
+  case Map.lookup newAddr ctx of
+    Just x -> EvalContinues x (EvalContext ctx n pn)
+    Nothing -> EvalStops (App Deref (Var newAddr)) (EvaluationFailure "Deref failed: addr not in evaluation context")
 evalApp (App Assign (Vaddr x)) lte (EvalContext ctx n pn) =
   let newCtx = Map.insert x lte ctx
-   in EvalStepSuccess (Unit) (EvalContext newCtx n pn)
-evalApp f a _ = EvalStepFailure (App f a) (EvaluationFailure ("evalApp : unevaluable (((" ++ show (App f a) ++ ")))"))
+   in EvalContinues Unit (EvalContext newCtx n pn)
+--------------------------------------------------------------------------------------------------
+{-
+evalApp (App bop x) y evCtx
+  | evaluable x && evaluable y =
+    case List.elem bop (Add : Sub : Cons : [])) of
+      False -> EvalStops (App (App bop x) y) (EvaluationFailure "[[[failcause:6]]]")
+      True ->
+        case evalCBVstep x evCtx of
+          EvalStops newlte stpc ->
+            EvalStops (App (App bop newlte) y) stpc
+          EvalContinues newlte1 newctx1 ->
+            case evalCBVstep y newctx1) of
+              EvalContinues newlte2 newctx2 ->
+                EvalContinues (App (App bop newlte1) newlte2) newctx2
+              EvalStops newlte stpc ->
+                EvalStops (App (App bop newlte1) newlte) stpc
+  | evaluable x =
+    case List.elem bop (Add : Sub : Cons : [])) of
+      False -> EvalStops (App (App bop x) y) (EvaluationFailure "[[[failcause:6]]]")
+      True ->
+        case evalCBVstep x evCtx of
+          EvalStops newlte stpc ->
+            EvalStops (App (App bop newlte) y) stpc
+          EvalContinues newlte1 newctx1 ->
+            EvalContinues (App (App bop newlte1) y) newctx1
+  | evaluable y =
+    case List.elem bop (Add : Sub : Cons : [])) of
+      False -> EvalStops (App (App bop x) y) (EvaluationFailure "[[[failcause:6]]]")
+      True ->
+        case evalCBVstep y evCtx of
+          EvalStops newlte stpc ->
+            EvalStops (App (App Cons newlte) y) stpc
+          EvalContinues newlte1 newctx1 ->
+            EvalContinues (App (App Cons x) newlte1) newctx1
+  | otherwise = EvalStops (App (App Cons x) y) (EvaluationFailure "[[[failcause:6]]]")
+--------------------------------------------------------------------------------------------------
+evalApp uop x evCtx
+  | evaluable x =
+    case List.elem uop (Hd : Tl : [])) of
+      False -> EvalStops (App uop x) (EvaluationFailure "[[[failcause:7]]]")
+      True ->
+        case evalCBVstep x evCtx of
+          EvalContinues newlte newctx ->
+            EvalContinues (App uop newlte) newctx
+          EvalStops newlte stpc ->
+            EvalStops (App uop newlte) stpc
+  | otherwise = EvalStops (App uop x) (EvaluationFailure "[[[failcause:7]]]")
+--------------------------------------------------------------------------------------------------
+-}
+evalApp f a _ = EvalStops (App f a) (EvaluationFailure ("evalApp : unevaluable (((" ++ show (App f a) ++ ")" ++ show f ++ "    " ++ show a ++ "))"))
 
 {-
   Does one evaluation step
 -}
-eval_CBV_step :: LTerm -> EvalContext -> EvalStepRes
-eval_CBV_step (App lte1 lte2) (EvalContext ctx n pn) =
-  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
-    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
-      EvalStepSuccess (App newLTe1 lte2) (EvalContext newctx newN newpn)
-    EvalStepFailure _ _ ->
-      ( case (eval_CBV_step lte2 (EvalContext ctx n pn)) of
-          EvalStepSuccess newLTe2 (EvalContext newctx newN newpn) ->
-            EvalStepSuccess (App lte1 newLTe2) (EvalContext newctx newN newpn)
-          EvalStepFailure _ _ ->
-            evalApp lte1 lte2 (EvalContext ctx n pn)
-      )
-eval_CBV_step (Let x lte1 lte2) (EvalContext ctx n pn) =
-  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
-    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
-      EvalStepSuccess (Let x newLTe1 lte2) (EvalContext newctx newN newpn)
-    EvalStepFailure _ _ ->
+evalCBVstep :: LTerm -> EvalContext -> EvalStepRes
+evalCBVstep (App lte1 lte2) (EvalContext ctx n pn) =
+  case evalCBVstep lte1 (EvalContext ctx n pn) of
+    EvalContinues newLTe1 (EvalContext newctx newN newpn) ->
+      EvalContinues (App newLTe1 lte2) (EvalContext newctx newN newpn)
+    EvalStops _ _ ->
+      case evalCBVstep lte2 (EvalContext ctx n pn) of
+        EvalContinues newLTe2 (EvalContext newctx newN newpn) ->
+          EvalContinues (App lte1 newLTe2) (EvalContext newctx newN newpn)
+        EvalStops _ _ ->
+          evalApp lte1 lte2 (EvalContext ctx n pn)
+evalCBVstep (Let x lte1 lte2) (EvalContext ctx n pn) =
+  case evalCBVstep lte1 (EvalContext ctx n pn) of
+    EvalContinues newLTe1 (EvalContext newctx newN newpn) ->
+      EvalContinues (Let x newLTe1 lte2) (EvalContext newctx newN newpn)
+    EvalStops _ _ ->
       let newLTe2 = instantiate x lte1 lte2
-       in EvalStepSuccess newLTe2 (EvalContext ctx n pn)
-eval_CBV_step (IfZ lte1 lte2 lte3) (EvalContext ctx n pn) =
-  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
-    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
-      EvalStepSuccess (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
-    EvalStepFailure _ _ ->
+       in EvalContinues newLTe2 (EvalContext ctx n pn)
+evalCBVstep (IfZ lte1 lte2 lte3) (EvalContext ctx n pn) =
+  case evalCBVstep lte1 (EvalContext ctx n pn) of
+    EvalContinues newLTe1 (EvalContext newctx newN newpn) ->
+      EvalContinues (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
+    EvalStops _ _ ->
       case lte1 of
         LInt x ->
           if x == 0
-            then (EvalStepSuccess lte2 (EvalContext ctx n pn))
-            else (EvalStepSuccess lte3 (EvalContext ctx n pn))
-        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ifz")
-eval_CBV_step (IfE lte1 lte2 lte3) (EvalContext ctx n pn) =
-  case (eval_CBV_step lte1 (EvalContext ctx n pn)) of
-    EvalStepSuccess newLTe1 (EvalContext newctx newN newpn) ->
-      EvalStepSuccess (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
-    EvalStepFailure _ _ ->
+            then EvalContinues lte2 (EvalContext ctx n pn)
+            else EvalContinues lte3 (EvalContext ctx n pn)
+        _ -> EvalStops (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ifz")
+evalCBVstep (IfE lte1 lte2 lte3) (EvalContext ctx n pn) =
+  case evalCBVstep lte1 (EvalContext ctx n pn) of
+    EvalContinues newLTe1 (EvalContext newctx newN newpn) ->
+      EvalContinues (IfZ newLTe1 lte2 lte3) (EvalContext newctx newN newpn)
+    EvalStops _ _ ->
       case lte1 of
-        LInt x ->
-          if x == 0
-            then (EvalStepSuccess lte2 (EvalContext ctx n pn))
-            else (EvalStepSuccess lte3 (EvalContext ctx n pn))
-        _ -> EvalStepFailure (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ife")
-eval_CBV_step lte _ = EvalStepFailure lte EvaluationOver
+        List x ->
+          if List.null x
+            then EvalContinues lte2 (EvalContext ctx n pn)
+            else EvalContinues lte3 (EvalContext ctx n pn)
+        _ -> EvalStops (IfZ lte1 lte2 lte3) (EvaluationFailure "Eval failure ife")
+evalCBVstep lte _ = EvalStops lte EvaluationOver
 
 data EvalRes
-  = EvalSuccess [String] LTerm
+  = EvalSuccess [String] LTerm LTerm
   | EvalFailure [String] LTerm String
 
---  deriving (Show)
-
 instance Show EvalRes where
-  show (EvalSuccess strl lte) =
-    "Evaluation of : " ++ (show lte) ++ "\n\n"
+  show (EvalSuccess strl lte newlte) =
+    "Evaluation) of  : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" strl
       ++ "\n\n"
       ++ "The evaluation succeeded! result : "
-      ++ (show lte)
+      ++ show newlte
       ++ "\n\n"
   show (EvalFailure strl lte msg) =
-    "Evaluation of : " ++ (show lte) ++ "\n\n"
+    "Evaluation) of  : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" strl
       ++ "\n\n"
       ++ "The evaluation failed! cause : "
       ++ msg
       ++ "\n\n"
 
-ioListToIO :: [IO ()] -> IO ()
-ioListToIO (x : xs) = do
-  x
-  ioListToIO xs
-ioListToIO [] = putStrLn "~~~~~~~~~~~~~~~~~~~~~~\n"
-
-printEvalRes :: EvalRes -> IO ()
-printEvalRes (EvalSuccess l lte) =
-  do
-    putStrLn "\n~~~~~~~~~~~~~~~~~~~~~~\n"
-    ioListToIO (List.map (\x -> putStrLn (x ++ "\n")) l)
-    putStrLn ("Evaluation Successfull res " ++ show lte)
-printEvalRes (EvalFailure l _ msg) =
-  do
-    putStrLn "\n~~~~~~~~~~~~~~~~~~~~~~\n"
-    ioListToIO (List.map (\x -> putStrLn (x ++ "\n")) l)
-    putStrLn ("Evaluation failed : " ++ msg)
-
-eval_CBV_rec :: LTerm -> Int -> [String] -> EvalContext -> EvalRes
-eval_CBV_rec lte maxnbsteps acc (EvalContext ctx n pn)
-  | maxnbsteps > 0 =
-    case (eval_CBV_step lte (EvalContext ctx n pn)) of
-      EvalStepSuccess newLTe (EvalContext newctx newN newpn) ->
-        eval_CBV_rec
+evalCBVrec :: LTerm -> Int -> Int -> [String] -> EvalContext -> EvalRes
+evalCBVrec lte nbsteps maxnbsteps acc (EvalContext ctx n pn)
+  | maxnbsteps > nbsteps =
+    case evalCBVstep lte (EvalContext ctx n pn) of
+      EvalContinues newLTe (EvalContext newctx newN newpn) ->
+        evalCBVrec
           newLTe
-          (maxnbsteps -1)
-          ( ( (show maxnbsteps) ++ " | "
-                ++ (show newLTe)
+          (nbsteps + 1)
+          maxnbsteps
+          ( ( show nbsteps ++ " | "
+                ++ show newLTe
             ) :
             acc
           )
           (EvalContext newctx newN newpn)
-      EvalStepFailure newLTe (EvaluationFailure msg) ->
+      EvalStops newLTe (EvaluationFailure msg) ->
         EvalFailure (List.reverse acc) newLTe msg
-      EvalStepFailure newLTe EvaluationOver -> EvalSuccess (List.reverse acc) newLTe
-  | otherwise = EvalFailure (List.reverse acc) lte "eval_CBV failure: nbsteps = 0"
+      EvalStops newLTe EvaluationOver -> EvalSuccess (List.reverse acc) lte newLTe
+  | otherwise = EvalFailure (List.reverse acc) lte "step limit atteined"
 
-eval_CBV :: LTerm -> Int -> EvalRes
-eval_CBV lte maxnbsteps = eval_CBV_rec lte maxnbsteps ((show lte) : []) (makeEvalContext ())
+evalCBV :: LTerm -> Int -> EvalRes
+evalCBV lte maxnbsteps = evalCBVrec lte 1 maxnbsteps ["0 | " ++ show lte] (makeEvalContext ())
+
+--debug
+getResLTfromEvalRes :: EvalRes -> LTerm
+getResLTfromEvalRes (EvalSuccess _ _ lte) = lte
+getResLTfromEvalRes (EvalFailure _ _ msg) = error ("Can't Get evaluation result, it failed! " ++ msg)
+
+--debug
+evalsteprescontinue :: EvalStepRes -> EvalStepRes
+evalsteprescontinue (EvalContinues lte (EvalContext ctx n pn)) =
+  evalCBVstep lte (EvalContext ctx n pn)
+evalsteprescontinue x = x
+
+{-
+data EvalContext = EvalContext (Map String LTerm) Int Int deriving (Show)
+data EvalStopCause = EvaluationOver | EvaluationFailure String deriving (Show)
+data EvalStepRes
+  = EvalContinues LTerm EvalContext
+  | EvalStops LTerm EvalStopCause
+  deriving (Show)
+
+-}
+
+--App (App (App Fix (Abs "map" ( Abs "f" (Abs "l" ( IfE (Var "l") (List [])
+-- (App (App Cons x1) x2)))))) (App Add (LInt 5) )) (List ((LInt 1):(LInt 2):(LInt 3):[]))
+--App (App (App Fix (Abs "map" ( Abs "f" (Abs "l" ( IfE (Var "l") (List []) (App (App Cons x1) x2)))))) (App Add (LInt 5) )) (List ((LInt 1):(LInt 2):(LInt 3):[]))
+
+{-
+(
+  (
+    (
+      (
+        ( 5 + (hd [1, 2, 3]) )
+        ::
+        ifEmpty (tl [1, 2, 3])
+          then []
+          else
+            (
+              ( 5 + (hd (tl [1, 2, 3])) )
+              ::
+              (
+                (
+                  (
+                    fix λmap.(λf.(λl.(
+                      ifEmpty l
+                      then []
+                      else
+                        ( (f (hd l))
+                        ::((map f) (tl l)) )
+                    )))
+                  ) 5
+                ) (tl (tl [1, 2, 3]))
+              )
+            )
+      )
+    )
+  )
+)
+
+let x1 = App  (Var "f") (App Hd (Var "l") )
+let x21 = App (Var "map") (Var "f")
+let x22 = App Tl (Var "l")
+let x2 = App x21 x22
+let a = App Fix (Abs "map" ( Abs "f" (Abs "l" ( IfE (Var "l") (List []) (App (App Cons x1) x2)  ))))
+
+-}
