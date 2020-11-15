@@ -12,7 +12,6 @@ data LTerm
   | Let String LTerm LTerm
   | LInt Int
   | List [LTerm]
-  | Vaddr String
   | Unit
   | Add
   | Sub
@@ -22,6 +21,7 @@ data LTerm
   | Fix
   | Ref
   | Deref
+  | Vaddr String
   | Assign
   deriving (Eq)
 
@@ -42,7 +42,7 @@ instance Show LTerm where
   show Ref = "ref"
   show Deref = "!"
   show Assign = ":="
-  show (Vaddr str) = str
+  show (Vaddr str) = "@" ++ str
   show (App (App Add x) y) = "( " ++ show x ++ show Add ++ show y ++ " )"
   show (App (App Sub x) y) = "( " ++ show x ++ show Sub ++ show y ++ " )"
   show (App (App Cons x) y) = "( " ++ show x ++ show Cons ++ show y ++ " )"
@@ -128,4 +128,3 @@ instantiate varToRep newLT (Let v lte1 lte2) =
 instantiate varToRep newLT (List l) =
   List (List.map (instantiate varToRep newLT) l)
 instantiate _ _ x = x
-

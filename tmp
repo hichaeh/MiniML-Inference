@@ -1,0 +1,126 @@
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )
+
+[( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] ),T1 = ℕ]
+[T2 = ℕ,( T1 -> T0 ) = ( ℕ -> ℕ ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] ),T1 = ℕ]
+[( T1 -> T0 ) = ( ℕ -> ℕ ),∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),T1 = ℕ]
+[T1 = ℕ,T0 = ℕ,∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),T1 = ℕ]
+[T0 = ℕ,∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ]
+[∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[[T4] = T3,T4 = ℕ,( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[T4 = ℕ,( T5 -> [T4] ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[( T5 -> [ℕ] ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[( T5 -> [ℕ] ) = ( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[T5 = Ref ( T6 ),[ℕ] = T6,T5 = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[[ℕ] = T6,Ref ( T6 ) = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[Ref ( [ℕ] ) = Ref ( [_T3] ),ℕ = ℕ,T0 = ℕ]
+[[ℕ] = [_T3],ℕ = ℕ,T0 = ℕ]
+[ℕ = _T3,ℕ = ℕ,T0 = ℕ]
+[ℕ = ℕ,ℕ = ℕ,T0 = ℕ]
+[ℕ = ℕ,ℕ = ℕ,T0 = ℕ]
+[ℕ = ℕ,T0 = ℕ]
+[T0 = ℕ]
+
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 ) resulted in : ℕ
+ trace : 
+
+
+genEquas(lte= ( (hd !l) + 8 ),lty= T0, n= 1,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] ),T1 = ℕ] ]
+
+genEquas(lte= 8,lty= T1, n= 7,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T1 = ℕ ]
+
+genEquas(lte= (+) (hd !l),lty= ( T1 -> T0 ), n= 2,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= (hd !l),lty= T2, n= 3,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= !l,lty= T3, n= 5,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T5, n= 7,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T5 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= !,lty= ( T5 -> T3 ), n= 6,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ) ]
+
+genEquas(lte= hd,lty= ( T3 -> T2 ), n= 4,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ∀T4.( [T4] -> T4 ) = ( T3 -> T2 ) ]
+
+genEquas(lte=  + ,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ) ]
+
+genEquas(lte= let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 ),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+genEquas(lte= ref,lty= ( T1 -> T0 ), n= 2,context= fromList [])
+ -----> [ ( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ) ]
+
+genEquas(lte= [],lty= T1, n= 3,context= fromList [])
+ -----> [ T1 = [T3] ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [ [( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ),T1 = [T3]] ]
+
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [  ]
+
+genEquas(lte= :=,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ) ]
+
+genEquas(lte= l,lty= T2, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T2 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= (:= l),lty= ( T1 -> T0 ), n= 2,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= ::,lty= ( T5 -> ( T4 -> T1 ) ), n= 6,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ) ]
+
+genEquas(lte= x,lty= T8, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] )),("x",T7)])
+ -----> [ T8 = T7 ]
+
+genEquas(lte= λx.(x),lty= T5, n= 7,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T5 = ( T7 -> T8 ) ]
+
+genEquas(lte= (cons) λx.(x),lty= ( T4 -> T1 ), n= 5,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7] ]
+
+genEquas(lte= !,lty= ( T9 -> T4 ), n= 10,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ) ]
+
+genEquas(lte= l,lty= T9, n= 11,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T9 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= !l,lty= T4, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= ( λx.(x)::!l ),lty= T1, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] ),∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+
+
+
+Evaluation) of  : ( λx.(x) + 8 )
+
+0 | let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )
+1 | let l = @p:1 in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )
+2 | let _ = ( @p:1:=( λx.(x)::!@p:1 ) ) in ( (hd !@p:1) + 8 )
+3 | let _ = ( @p:1:=( λx.(x)::[] ) ) in ( (hd !@p:1) + 8 )
+4 | let _ = ( @p:1:=[λx.(x)] ) in ( (hd !@p:1) + 8 )
+5 | let _ = □ in ( (hd !@p:1) + 8 )
+6 | ( (hd !@p:1) + 8 )
+7 | ( (hd [λx.(x)]) + 8 )
+8 | ( λx.(x) + 8 )
+
+The evaluation failed! cause : [[[failcause : 3.2]]]
+
+

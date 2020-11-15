@@ -12,7 +12,8 @@ data LType
   | TRef LType
   | TInt
   | TUnit
-  | WV Bool String LType
+  | WVT LType --  | WV Bool String LType
+  | WVF String
   | WF Bool String LType
   deriving (Eq)
 
@@ -24,8 +25,10 @@ instance Show LType where
   show (TRef x) = "Ref ( " ++ show x ++ " )"
   show TInt = "ℕ"
   show TUnit = "⬤"
-  show (WV True _ lty) = show lty
-  show (WV False str _) = str
+  --  show (WV True _ lty) = show lty
+  --  show (WV False str _) = str
+  show (WVT lty) = show lty
+  show (WVF str) = str
   show (WF True _ lty) = show lty
   show (WF False str lty) = "∀" ++ str ++ "." ++ show lty
 

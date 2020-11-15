@@ -16,10 +16,14 @@ occurCheck tyv (TPoly x ltype) =
   tyv == TPoly x ltype || occurCheck tyv ltype
 occurCheck tyv (TRef x) =
   tyv == TRef x || occurCheck tyv x
-occurCheck tyv (WV True str lty) =
-  tyv == WV True str lty || occurCheck tyv lty
-occurCheck tyv (WV False str lty) =
-  tyv == WV False str lty || TVar str == tyv
+--occurCheck tyv (WV True str lty) =
+--  tyv == WV True str lty || occurCheck tyv lty
+--occurCheck tyv (WV False str lty) =
+--  tyv == WV False str lty || TVar str == tyv
+occurCheck tyv (WVT lty) =
+  tyv == WVT lty || occurCheck tyv lty
+occurCheck tyv (WVF str) =
+  tyv == WVF str || TVar str == tyv
 occurCheck tyv (WF b x lty) =
   tyv == WF b x lty || occurCheck tyv lty
 occurCheck _ _ = False
@@ -29,6 +33,7 @@ alphaConvTypes (TVar x) ctx n =
   case Map.lookup x ctx of
     Just y -> (n, TVar y)
     Nothing -> (n, TVar x)
+{-
 alphaConvTypes (WV b str lty) ctx n
   | b =
     let (newn, newlty) = alphaConvTypes lty ctx n
@@ -37,6 +42,14 @@ alphaConvTypes (WV b str lty) ctx n
     case Map.lookup str ctx of
       Just y -> (n, WV False y lty)
       Nothing -> (n, WV False str lty)
+-}
+alphaConvTypes (WVT lty) ctx n =
+  let (newn, newlty) = alphaConvTypes lty ctx n
+   in (newn, WVT newlty)
+alphaConvTypes (WVF str) ctx n =
+  case Map.lookup str ctx of
+    Just y -> (n, WVF y)
+    Nothing -> (n, WVF str)
 alphaConvTypes (TArrow x y) ctx n =
   let (newn1, newlty1) = alphaConvTypes x ctx n
       (newn2, newlty2) = alphaConvTypes y ctx newn1
@@ -65,7 +78,16 @@ mkString :: LTerm -> LType -> Int -> Map String LType -> String -> String
 mkString lte lty n ctx str =
   "genEquas(lte= " ++ show lte ++ ",lty= " ++ show lty ++ ", n= " ++ show n ++ ",context= " ++ show ctx ++ ")\n -----> [ " ++ str ++ " ]\n\n"
 
-data GenEquasRes = GenEquasSuccess [LTypeEqua] Int [String] | GenEquasFailed String [String]
+data GenEquasRes
+  = GenEquasSuccess [LTypeEqua] Int [String]
+  | GenEquasFailed String [String]
+
+data GenEquasContext
+  = GenEquasContext Int (Map String LType)
+
+getGRReqs :: GenEquasRes -> [LTypeEqua]
+getGRReqs (GenEquasSuccess eqs _ _) = eqs
+getGRReqs _ = error "errroooooooooor"
 
 instance Show GenEquasRes where
   show (GenEquasSuccess eqs n strl) =
@@ -111,6 +133,16 @@ genEquas (Abs v bodyLTe) lty n context trace =
                 GenEquasSuccess newLTyEqs newN trace1 ->
                   GenEquasSuccess (LTypeEqua lty (TArrow ltya ltyr) : newLTyEqs) newN (mkString (Abs v bodyLTe) lty n context (show (LTypeEqua lty (TArrow ltya ltyr))) : trace1)
                 GenEquasFailed msg trace1 -> GenEquasFailed msg trace1
+
+--genEquas (App (App Assign (Var x)) lte) lty n context trace =
+--  case typeInference lte of
+--    TypeInferenceSuccess _ _ newlty _ ->
+--      genEquas lte2 lty n (Map.insert x newlty context) trace
+
+--  = TypeInferenceSuccess [String] LTerm LType [String]
+--  | TypeInferenceFailure [String] LTerm String [String]
+
+
 genEquas (App Fix (Abs v body)) lty n context trace =
   let tfix = TVar ("T" ++ show n)
    in case genEquas body tfix (n + 1) (Map.insert v tfix context) trace of
@@ -122,8 +154,10 @@ genEquas (App lte1 lte2) lty n context trace =
         GenEquasFailed msg trace1 -> GenEquasFailed msg trace1
         GenEquasSuccess newLTyEquas1 newN1 trace1 ->
           case genEquas lte2 ltya newN1 context trace1 of
-            GenEquasFailed msg trace2 -> GenEquasFailed msg trace2
-            GenEquasSuccess newLTyEquas2 newN2 trace2 -> GenEquasSuccess (newLTyEquas1 ++ newLTyEquas2) newN2 (mkString (App lte1 lte2) lty n context (show (newLTyEquas1 ++ newLTyEquas2)) : trace2)
+            GenEquasFailed msg trace2 ->
+              GenEquasFailed msg trace2
+            GenEquasSuccess newLTyEquas2 newN2 trace2 ->
+              GenEquasSuccess (newLTyEquas1 ++ newLTyEquas2) newN2 (mkString (App lte1 lte2) lty n context (show (newLTyEquas1 ++ newLTyEquas2)) : trace2)
 genEquas (LInt x) lty n context trace =
   GenEquasSuccess [LTypeEqua lty TInt] n (mkString (LInt x) lty n context (show (LTypeEqua lty TInt)) : trace)
 genEquas (List l) lty n ctx trace =
@@ -166,7 +200,7 @@ genEquas (IfE lte1 lte2 lte3) lty n context trace =
                     (mkString (IfE lte1 lte2 lte3) lty n context (show (LTypeEqua lty newTn : (newEqs1 ++ newEqs2 ++ newEqs3))) : trace3)
 genEquas (Let v lte1 lte2) lty n context trace =
   case typeInferenceRec lte1 context of
-    TypeDetectionSuccess _ _ newLTy newtrace ->
+    TypeInferenceSuccess _ _ newLTy newtrace ->
       if isNonExpansible lte1
         then
           let newContext = Map.insert v (generalise context newLTy) context
@@ -174,7 +208,7 @@ genEquas (Let v lte1 lte2) lty n context trace =
         else
           let newContext = Map.insert v (weakGeneralise newLTy) context
            in genEquas lte2 lty n newContext (trace ++ newtrace)
-    TypeDetectionFailure _ _ _ newtrace ->
+    TypeInferenceFailure _ _ _ newtrace ->
       GenEquasFailed (" genEquasFailure {1} typeDetection of " ++ show lte1 ++ " in " ++ show context) (mkString Unit lty n context (" genEquasFailure {1} typeDetection of " ++ show lte1 ++ " in " ++ show context) : trace ++ newtrace)
 genEquas Add lty n context trace =
   GenEquasSuccess [LTypeEqua lty (TArrow TInt (TArrow TInt TInt))] n (mkString Add lty n context (show (LTypeEqua lty (TArrow TInt (TArrow TInt TInt)))) : trace)
@@ -249,9 +283,12 @@ getFreeVars context (TPoly v t) =
   getFreeVars (v : context) t
 getFreeVars context (TRef v) =
   getFreeVars context v
-getFreeVars context (WV b v lty)
-  | b = getFreeVars context lty
-  | otherwise = [v]
+--getFreeVars context (WV b v lty)
+--  | b = getFreeVars context lty
+--  | otherwise = [v]
+getFreeVars context (WVT lty) =
+  getFreeVars context lty
+getFreeVars _ (WVF str) = [str]
 getFreeVars context (WF b str lty)
   | b = getFreeVars context lty
   | otherwise = getFreeVars (str : context) lty
@@ -262,14 +299,14 @@ generalise _ t =
   let fvs = getFreeVars [] t
    in List.foldr TPoly t fvs
 
-mkWeakVar :: String -> LType
-mkWeakVar v =
-  WV False v TUnit
+--mkWeakVar :: String -> LType
+--mkWeakVar v =
+--  WVF v
 
 weakGeneraliseRec :: [String] -> LType -> LType
 weakGeneraliseRec (x : xs) lte =
   let newx = "_" ++ x
-   in weakGeneraliseRec xs (WF False newx (subs x (mkWeakVar newx) lte))
+   in weakGeneraliseRec xs (WF False newx (subs x (WVF newx) lte))
 weakGeneraliseRec [] lte = lte
 
 weakGeneralise :: LType -> LType
@@ -288,7 +325,9 @@ subs x newLTy (TPoly v lty) =
   TPoly v (subs x newLTy lty)
 subs x newLTy (TRef lty) =
   TRef (subs x newLTy lty)
-subs x newLTy (WV True _ lty) =
+--subs x newLTy (WV True _ lty) =
+--  subs x newLTy lty
+subs x newLTy (WVT lty) =
   subs x newLTy lty
 subs x newLTy (WF _ _ lty) =
   subs x newLTy lty
@@ -313,16 +352,6 @@ unificationStep ((LTypeEqua (TArrow ltya1 ltyb1) (TArrow ltya2 ltyb2)) : tl2) lt
   | otherwise --UnifStepSuccess (LTypeEqua ltya1 ltya2 : LTypeEqua ltyb1 ltyb2 : tl2)
     =
     UnifStepSuccess (LTypeEqua ltya1 ltya2 : LTypeEqua ltyb1 ltyb2 : tl2)
-unificationStep ((LTypeEqua (TVar x) td) : tl2) ltyf _
-  | occurCheck ltyf (TVar x) || occurCheck ltyf td = UnifStepSuccess (tl2 ++ [LTypeEqua (TVar x) td])
-  | TVar x == td = UnifStepSuccess tl2
-  | occurCheck (TVar x) td = UnifStepFailure (x ++ " 1 occurs in " ++ show td) -- (show (LTypeEqua (TVar x) td : tl2) : trace) -- ++ "     ***  " ++ show ((LTypeEqua (TVar x) td) : tl2) ++ " ***")
-  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x td) tl2)
-unificationStep ((LTypeEqua tg (TVar x)) : tl2) ltyf _
-  | occurCheck ltyf tg || occurCheck ltyf (TVar x) = UnifStepSuccess (tl2 ++ [LTypeEqua tg (TVar x)])
-  | TVar x == tg = UnifStepSuccess tl2
-  | occurCheck (TVar x) tg = UnifStepFailure (x ++ " 2 occurs in " ++ show tg) --(show (LTypeEqua tg (TVar x) : tl2) : trace)
-  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x tg) tl2)
 unificationStep ((LTypeEqua (TPoly v lty) td) : tl2) _ n
   | TPoly v lty == td = UnifStepSuccess tl2
   | otherwise =
@@ -342,21 +371,47 @@ unificationStep (LTypeEqua (WF b v lty) td : tl2) _ _
 unificationStep (LTypeEqua tg (WF b v lty) : tl2) _ _
   | WF b v lty == tg = UnifStepSuccess tl2
   | otherwise = UnifStepSuccess (LTypeEqua lty tg : tl2)
+{-
 unificationStep (LTypeEqua (WV b v lty) td : tl2) _ _
-  | WF b v lty == td = UnifStepSuccess tl2
+  | WV b v lty == td = UnifStepSuccess tl2
   | occurCheck (TVar v) td = UnifStepFailure ("WV : " ++ show v ++ " 3 occurs in " ++ show td) --(show (LTypeEqua (WV b v lty) td : tl2) : trace)
   | b = UnifStepSuccess (LTypeEqua lty td : tl2)
   | otherwise = UnifStepSuccess (LTypeEqua (WV True v td) td : tl2)
 unificationStep ((LTypeEqua tg (WV b v lty)) : tl2) _ _
-  | WF b v lty == tg = UnifStepSuccess tl2
+  | Wv b v lty == tg = UnifStepSuccess tl2
   | occurCheck (TVar v) tg = UnifStepFailure ("WV : " ++ show v ++ " 4 occurs in " ++ show tg) --(show (LTypeEqua tg (WV b v lty) : tl2) : trace)
   | b =
     UnifStepSuccess (LTypeEqua tg lty : tl2)
   | otherwise =
     UnifStepSuccess (LTypeEqua tg (WV True v tg) : tl2)
+-}
+unificationStep (LTypeEqua (WVT lty) td : tl2) _ _
+  | WVT lty == td = UnifStepSuccess tl2
+  | otherwise = UnifStepSuccess (LTypeEqua lty td : tl2)
+unificationStep (LTypeEqua (WVF str) td : tl2) _ _
+  | WVF str == td = UnifStepSuccess tl2
+  | occurCheck (TVar str) td = UnifStepFailure ("WVF : " ++ show str ++ " 3 occurs in " ++ show td) --(show (LTypeEqua (WV b v lty) td : tl2) : trace)
+  | otherwise = UnifStepSuccess (LTypeEqua (WVT td) td : tl2)
+unificationStep (LTypeEqua tg (WVT lty) : tl2) _ _
+  | WVT lty == tg = UnifStepSuccess tl2
+  | otherwise = UnifStepSuccess (LTypeEqua lty tg : tl2)
+unificationStep (LTypeEqua tg (WVF str) : tl2) _ _
+  | WVF str == tg = UnifStepSuccess tl2
+  | occurCheck (TVar str) tg = UnifStepFailure ("WVF : " ++ show str ++ " 4 occurs in " ++ show tg) --(show (LTypeEqua (WV b v lty) td : tl2) : trace)
+  | otherwise = UnifStepSuccess (LTypeEqua (WVT tg) tg : tl2)
 unificationStep ((LTypeEqua (TRef lty1) (TRef lty2)) : tl2) _ _
   | lty1 == lty2 = UnifStepSuccess tl2
   | otherwise = UnifStepSuccess (LTypeEqua lty1 lty2 : tl2)
+unificationStep ((LTypeEqua (TVar x) td) : tl2) ltyf _
+  | occurCheck ltyf (TVar x) || occurCheck ltyf td = UnifStepSuccess (tl2 ++ [LTypeEqua (TVar x) td])
+  | TVar x == td = UnifStepSuccess tl2
+  | occurCheck (TVar x) td = UnifStepFailure (x ++ " 1 occurs in " ++ show td) -- (show (LTypeEqua (TVar x) td : tl2) : trace) -- ++ "     ***  " ++ show ((LTypeEqua (TVar x) td) : tl2) ++ " ***")
+  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x td) tl2)
+unificationStep ((LTypeEqua tg (TVar x)) : tl2) ltyf _
+  | occurCheck ltyf tg || occurCheck ltyf (TVar x) = UnifStepSuccess (tl2 ++ [LTypeEqua tg (TVar x)])
+  | TVar x == tg = UnifStepSuccess tl2
+  | occurCheck (TVar x) tg = UnifStepFailure (x ++ " 2 occurs in " ++ show tg) --(show (LTypeEqua tg (TVar x) : tl2) : trace)
+  | otherwise = UnifStepSuccess (List.map (subsInLTyEq x tg) tl2)
 unificationStep ((LTypeEqua x y) : l) _ _
   | x == y = UnifStepSuccess l
   | otherwise = UnifStepFailure (show x ++ " is incompatible with " ++ show y) --(show ((LTypeEqua x y) : l) : trace)
@@ -384,8 +439,12 @@ isSimplifiable (LTypeEqua (TList _) (TList _)) = True
 isSimplifiable (LTypeEqua (TRef _) (TRef _)) = True
 isSimplifiable (LTypeEqua WF {} _) = True
 isSimplifiable (LTypeEqua _ WF {}) = True
-isSimplifiable (LTypeEqua WV {} _) = True
-isSimplifiable (LTypeEqua _ WV {}) = True
+--isSimplifiable (LTypeEqua WV {} _) = True
+--isSimplifiable (LTypeEqua _ WV {}) = True
+isSimplifiable (LTypeEqua WVT {} _) = True
+isSimplifiable (LTypeEqua _ WVT {}) = True
+isSimplifiable (LTypeEqua WVF {} _) = True
+isSimplifiable (LTypeEqua _ WVF {}) = True
 isSimplifiable (LTypeEqua (TPoly _ _) _) = True
 isSimplifiable (LTypeEqua _ (TPoly _ _)) = True
 isSimplifiable _ = False
@@ -396,7 +455,6 @@ unifyEqs [x] strl lty n
     case unificationStep [x] lty n of
       UnifStepSuccess newl ->
         unifyEqs newl (show newl : strl) lty n
-      --(("unifyEqs("++show newl++", "++show (show newl : strl)++", "++show lty++", "++show  n++")"):trace)
       UnifStepFailure msg -> UnifFailure strl (" 1 Unification failure (unifyEqs) : " ++ msg ++ "\n" ++ show (List.reverse strl))
   | otherwise = UnifSuccess strl x
 unifyEqs l strl lty n =
@@ -411,12 +469,12 @@ getType (LTypeEqua x y) lty
   | y == lty = x
   | otherwise = error (show lty ++ " not present in " ++ show (LTypeEqua x y))
 
-data TypeDetectionRes
-  = TypeDetectionSuccess [String] LTerm LType [String]
-  | TypeDetectionFailure [String] LTerm String [String]
+data TypeInferenceRes
+  = TypeInferenceSuccess [String] LTerm LType [String]
+  | TypeInferenceFailure [String] LTerm String [String]
 
-instance Show TypeDetectionRes where
-  show (TypeDetectionSuccess l lte lty _) =
+instance Show TypeInferenceRes where
+  show (TypeInferenceSuccess l lte lty trace) =
     "Type inference of : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" l
       ++ "\n\n"
@@ -424,8 +482,9 @@ instance Show TypeDetectionRes where
       ++ show lte
       ++ " resulted in : "
       ++ show lty
-      ++ "\n"
-  show (TypeDetectionFailure l lte msg trace) =
+      ++ "\n trace : \n"
+      ++ List.intercalate "" (List.reverse trace)
+  show (TypeInferenceFailure l lte msg trace) =
     "Type inference of : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" l
       ++ "\n\n"
@@ -436,22 +495,26 @@ instance Show TypeDetectionRes where
       ++ "\n trace : \n"
       ++ List.intercalate "" trace
 
-typeInferenceRec :: LTerm -> Map String LType -> TypeDetectionRes
+typeInferenceRec :: LTerm -> Map String LType -> TypeInferenceRes
 typeInferenceRec lte context =
   let lty = TVar "T0"
    in case genEquas lte lty 1 context [mkString lte lty 1 context []] of
         GenEquasFailed msg trace ->
-          TypeDetectionFailure [] lte msg (List.reverse trace)
+          TypeInferenceFailure [] lte msg (List.reverse trace)
         GenEquasSuccess eqs n trace ->
           case unifyEqs eqs [show eqs] lty n of
             UnifSuccess strl resEq ->
-              TypeDetectionSuccess
+              TypeInferenceSuccess
                 (List.reverse strl)
                 lte
                 (getType resEq lty)
                 (List.reverse trace)
             UnifFailure strl msg ->
-              TypeDetectionFailure (List.reverse strl) lte msg (List.reverse trace)
+              TypeInferenceFailure (List.reverse strl) lte msg (List.reverse trace)
 
-typeInference :: LTerm -> TypeDetectionRes
+typeInference :: LTerm -> TypeInferenceRes
 typeInference lte = typeInferenceRec lte Map.empty
+
+{-
+
+-}
