@@ -29,7 +29,9 @@ library
   exposed-modules:
       Lib
       , Terms
+      , Evaluation
       , Types
+      , TypeInference
       , Funcs
   other-modules:
       Paths_MiniML_Inference
