@@ -47,9 +47,7 @@ main =
     doType (testExp2 ())
 
     --doEval (testExp2 ()) 1234
-    doType (testExp3 ())
 
---doEval (testExp2 ()) 1234
 
 {-
 
