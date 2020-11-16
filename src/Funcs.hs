@@ -121,16 +121,15 @@ testRefDerefAssign :: () -> LTerm
 testRefDerefAssign () =
   Let "l" (App Ref (List [LInt 2])) (App (App Assign (Var "l")) (App (App Cons (LInt 1)) (App Deref (Var "l"))))
 
--- Doesn't Evaluate:  let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )  ->  (λx.(x) + 8)
 {-
   let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )
-  Type: ℕ (Type inference works because we cheat when we come across an addition we automatically assume it returns an TInt)
+  Type: Unification failure ℕ is incompatible with ( T7 -> T7 )
   Eval: The evaluation failed! cause : [[[failcause : 3.2]]]   (unevaluable ( λx.(x) + 8 ))
 -}
 testExp1 :: () -> LTerm
 testExp1 () =
-  --Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (App (App Add (App Hd (App Deref (Var "l")))) (LInt 8)))
-  Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (Var "l"))
+  Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (App (App Add (App Hd (App Deref (Var "l")))) (LInt 8)))
+--Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (Var "l"))
 
 {-
   let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( ((hd !l) 5) + 8 )
