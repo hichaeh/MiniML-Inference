@@ -1,18 +1,19 @@
 module Terms where
 
+import Data.Bifunctor
 import Data.List as List
 import Data.Map as Map
 
 data LTerm
-  = Var String 
+  = Var String
   | App LTerm LTerm
   | Abs String LTerm
-  | IfZ LTerm LTerm LTerm -- ifzero
-  | IfE LTerm LTerm LTerm -- ifempty
-  | Let String LTerm LTerm 
-  | LInt Int 
+  | IfZ LTerm LTerm LTerm
+  | IfE LTerm LTerm LTerm
+  | Let String LTerm LTerm
+  | LInt Int
   | List [LTerm]
-  | Unit 
+  | Unit
   | Add
   | Sub
   | Cons
@@ -21,8 +22,11 @@ data LTerm
   | Fix
   | Ref
   | Deref
-  | Vaddr String -- Ref x -> Addr "x" = p1
+  | Vaddr String
   | Assign
+  | Record [(String, LTerm)]
+  | Get String
+  | Set String
   deriving (Eq)
 
 instance Show LTerm where
@@ -52,7 +56,13 @@ instance Show LTerm where
   show (App Sub x) = "(-) " ++ show x
   show (App Cons x) = "(cons) " ++ show x
   show Unit = "□"
+  show (App (Get x) y) =
+    show y ++ "[" ++ show x ++ "]"
+  show (App (App (Set x) y) z) =
+    show y ++ "[" ++ show x ++ "] <- " ++ show z
   show (App x y) = "(" ++ show x ++ " " ++ show y ++ ")"
+  show (Record fl) = "{" ++ List.intercalate ", " (List.map (\(x, y) -> x ++ ":" ++ show y) fl) ++ "}"
+  show _ = "[show : undexpected constructor]"
 
 alphaConvList :: [LTerm] -> Map String String -> Int -> [LTerm] -> (Int, [LTerm])
 alphaConvList ((Var str) : tl) context n acc =
@@ -63,6 +73,16 @@ alphaConvList (hd : tl) context n acc =
   let (newN, newLT) = alphaConv hd context n
    in alphaConvList tl context newN (newLT : acc)
 alphaConvList [] _ n acc = (n, List.reverse acc)
+
+alphaConvCplList :: [(String, LTerm)] -> Map String String -> Int -> [(String, LTerm)] -> (Int, [(String, LTerm)])
+alphaConvCplList ((fname, Var str) : tl) context n acc =
+  case Map.lookup str context of
+    Just x -> alphaConvCplList tl context n ((fname, Var x) : acc)
+    Nothing -> alphaConvCplList tl (Map.insert str ("x" ++ show n) context) (n + 1) ((fname, Var ("x" ++ show n)) : acc)
+alphaConvCplList ((fn, lte) : tl) context n acc =
+  let (newN, newLT) = alphaConv lte context n
+   in alphaConvCplList tl context newN ((fn, newLT) : acc)
+alphaConvCplList [] _ n acc = (n, List.reverse acc)
 
 alphaConv :: LTerm -> Map String String -> Int -> (Int, LTerm)
 alphaConv (Var v) context n =
@@ -96,6 +116,9 @@ alphaConv (Let str lte1 lte2) context n =
 alphaConv (List l) context n =
   let (newN, newL) = alphaConvList l context n []
    in (newN, List newL)
+alphaConv (Record l) context n =
+  let (newN, newL) = alphaConvCplList l context n []
+   in (newN, Record newL)
 alphaConv x _ n = (n, x)
 
 instantiate :: String -> LTerm -> LTerm -> LTerm
@@ -127,4 +150,6 @@ instantiate varToRep newLT (Let v lte1 lte2) =
     (instantiate varToRep newLT lte2)
 instantiate varToRep newLT (List l) =
   List (List.map (instantiate varToRep newLT) l)
+instantiate varToRep newLT (Record l) =
+  Record (List.map (Data.Bifunctor.second (instantiate varToRep newLT)) l)
 instantiate _ _ x = x

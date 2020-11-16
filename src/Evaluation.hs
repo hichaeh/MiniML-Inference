@@ -51,6 +51,12 @@ evaluable IfE {} = True
 evaluable IfZ {} = True
 evaluable _ = False
 
+lookupAndInsert :: String -> LTerm -> [(String, LTerm)] -> [(String, LTerm)]
+lookupAndInsert str lte ((x, y) : tl)
+  | str == x = (x, lte) : tl
+  | otherwise = (x, y) : lookupAndInsert str lte tl
+lookupAndInsert str _ [] = error ("lookupAndInsert  " ++ str ++ " not in Record!")
+
 evalApp :: LTerm -> LTerm -> EvalContext -> EvalStepRes
 evalApp (Abs v body) arg evCtx =
   EvalContinues (instantiate v arg body) evCtx
@@ -145,6 +151,7 @@ evalApp (App Cons (LInt arg1)) x evCtx
       EvalStops newlte stpc ->
         EvalStops (App (App Cons (LInt arg1)) newlte) stpc
   | otherwise = EvalStops (App (App Cons (LInt arg1)) x) (EvalStepFailure "[[[failcause : 5.1]]]")
+{-
 evalApp (App Cons x) (LInt arg2) evCtx
   | evaluable x =
     case evalCBVstep x evCtx of
@@ -153,6 +160,7 @@ evalApp (App Cons x) (LInt arg2) evCtx
       EvalStops newlte stpc ->
         EvalStops (App (App Cons newlte) (LInt arg2)) stpc
   | otherwise = EvalStops (App (App Cons x) (LInt arg2)) (EvalStepFailure "[[[failcause : 5.2]]]")
+-}
 evalApp (App Cons x) y evCtx
   | evaluable x && evaluable y =
     case evalCBVstep x evCtx of
@@ -200,6 +208,19 @@ evalApp Deref (Vaddr newAddr) (EvalContext ctx n pn) =
 evalApp (App Assign (Vaddr x)) lte (EvalContext ctx n pn) =
   let newCtx = Map.insert x lte ctx
    in EvalContinues Unit (EvalContext newCtx n pn)
+--------------------------------------------------------------------------------------------------
+evalApp (App (Get x) (Record l)) _ (EvalContext ctx n pn) =
+  case List.lookup x l of
+    Nothing -> EvalStops (App (Get x) (Record l)) (EvalStepFailure (show x ++ " not in " ++ show (Record l)))
+    Just res -> EvalContinues res (EvalContext ctx n pn)
+evalApp (Get x) (Record l) (EvalContext ctx n pn) =
+  case List.lookup x l of
+    Nothing -> EvalStops (App (Get x) (Record l)) (EvalStepFailure (show x ++ " not in " ++ show (Record l)))
+    Just res -> EvalContinues res (EvalContext ctx n pn)
+evalApp (App (Set x) (Record l)) lte (EvalContext ctx n pn) =
+  case List.lookup x l of
+    Nothing -> EvalStops (Record l) (EvalStepFailure (show x ++ " not in " ++ show (Record l)))
+    Just _ -> EvalContinues (Record (lookupAndInsert x lte l)) (EvalContext ctx n pn)
 --------------------------------------------------------------------------------------------------
 evalApp f a _ = EvalStops (App f a) (EvalStepFailure ("evalApp : unevaluable ((( " ++ show (App f a) ++ " )))"))
 

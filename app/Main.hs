@@ -40,10 +40,10 @@ main =
     --doType (testRefDerefAssign ())
     --doEval (testRefDerefAssign ()) 1234
 
-    doType (testExp1 ())
+    --doType (testExp1 ())
 
-    doEval (testExp1 ()) 1234
+    --doEval (testExp1 ()) 1234
 
     doType (testExp2 ())
 
-    doEval (testExp2 ()) 1234
+--doEval (testExp2 ()) 1234

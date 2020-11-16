@@ -1,6 +1,7 @@
 module Types where
 
---import Data.List as List
+import Data.List as List
+
 --import Data.Map as Map
 --import Terms
 
@@ -12,9 +13,10 @@ data LType
   | TRef LType
   | TInt
   | TUnit
-  | WVT String LType --  | WV Bool String LType
+  | WVT LType
   | WVF String
   | WF Bool String LType
+  | TRecord [(String, LType)]
   deriving (Eq)
 
 instance Show LType where
@@ -25,12 +27,11 @@ instance Show LType where
   show (TRef x) = "Ref ( " ++ show x ++ " )"
   show TInt = "ℕ"
   show TUnit = "⬤"
-  --  show (WV True _ lty) = show lty
-  --  show (WV False str _) = str
-  show (WVT _ lty) = show lty
+  show (WVT lty) = show lty
   show (WVF str) = str
   show (WF True _ lty) = show lty
   show (WF False str lty) = "∀" ++ str ++ "." ++ show lty
+  show (TRecord l) = "{" ++ List.intercalate ", " (List.map (\(_, y) -> show y) l) ++ "}"
 
 data LTypeEqua = LTypeEqua LType LType deriving (Eq)
 
