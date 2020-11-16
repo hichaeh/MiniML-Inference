@@ -538,7 +538,7 @@ data TypeInferenceRes
   | TypeInferenceFailure [String] LTerm String [String]
 
 instance Show TypeInferenceRes where
-  show (TypeInferenceSuccess weakvs l lte lty trace) =
+  show (TypeInferenceSuccess _ l lte lty _) =
     "Type inference of : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" l
       ++ "\n\n"
@@ -546,11 +546,11 @@ instance Show TypeInferenceRes where
       ++ show lte
       ++ " resulted in : "
       ++ show lty
-      ++ "\n trace : \n"
-      ++ List.intercalate "" (List.reverse trace)
-      ++ "\n\n weakvs : "
-      ++ show weakvs
-  show (TypeInferenceFailure l lte msg trace) =
+  --      ++ "\n trace : \n"
+  --      ++ List.intercalate "" (List.reverse trace)
+  --      ++ "\n\n weakvs : "
+  --      ++ show weakvs
+  show (TypeInferenceFailure l lte msg _) =
     "Type inference of : " ++ show lte ++ "\n\n"
       ++ List.intercalate "\n" l
       ++ "\n\n"
@@ -558,32 +558,9 @@ instance Show TypeInferenceRes where
       ++ show lte
       ++ " failed : "
       ++ msg
-      ++ "\n trace : \n"
-      ++ List.intercalate "" trace
 
-{-
-[ T0  =  ℕ ,
-(  -> T3 -> ℕ ) = ( [T3 -> ℕ] -> (  ) ),
- ( T6 -> [T3 -> ℕ] ) = ∀T7.( Ref ( T7 ) -> T7 ),
-T6 = Ref ( [_T3] ),T3 = ℕ,ℕ = ℕ]
-
--}
-{-
-initWV :: String -> LType -> LType -> LType
-initWV x newLTy (WVF str)
-  | x == str = newLTy
-  | otherwise = WVF str
-initWV x newLTy (WF False str lty)
-  | x == str = WF True str (initWV x newLTy lty)
-  | otherwise = WF False str (initWV x newLTy lty)
-initWV x newLTy (WF True _ lty) =
-  initWV x newLTy lty
-initWV x newLTy y = subs x newLTy y
-
-initWVEq :: String -> LType -> LTypeEqua -> LTypeEqua
-initWVEq x newLTy (LTypeEqua lty1 lty2) =
-  LTypeEqua (initWV x newLTy lty1) (initWV x newLTy lty2)
--}
+--      ++ "\n trace : \n"
+--      ++ List.intercalate "" trace
 
 {-
   If a referenced value changed, all it's occurances will be changed
@@ -596,7 +573,7 @@ updateEqs [] lteqs = lteqs
 
 updateCtx :: [(String, LType)] -> Map String LType -> Map String LType
 updateCtx ((str, lty) : l) ctx =
-  updateCtx l (Map.map (subs str lty) ctx) --l (List.map (subsInLTyEq str lty) lteqs)
+  updateCtx l (Map.map (subs str lty) ctx)
 updateCtx [] ctx = ctx
 
 typeInferenceRec :: LTerm -> Map String LType -> Map String LType -> TypeInferenceRes
@@ -620,7 +597,3 @@ typeInferenceRec lte vcontext weakvs =
 
 typeInference :: LTerm -> TypeInferenceRes
 typeInference lte = typeInferenceRec lte Map.empty Map.empty
-
-{-
-
--}
