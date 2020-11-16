@@ -1,14 +1,149 @@
-Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in l
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 )
 
-[T0 = ∀_T3.Ref ( [_T3] )]
-[Ref ( [_T3] ) = T0]
+[( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),T1 = ℕ]
+[T2 = ℕ,( T1 -> T0 ) = ( ℕ -> ℕ ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[( T1 -> T0 ) = ( ℕ -> ℕ ),∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[T1 = ℕ,T0 = ℕ,∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[T0 = ℕ,∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ]
+[∀T4.( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[( [T4] -> T4 ) = ( T3 -> ℕ ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[[T4] = T3,T4 = ℕ,( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[T4 = ℕ,( T5 -> [T4] ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[( T5 -> [ℕ] ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[( T5 -> [ℕ] ) = ( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[T5 = Ref ( T6 ),[ℕ] = T6,T5 = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[[ℕ] = T6,Ref ( T6 ) = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[Ref ( [ℕ] ) = Ref ( [( T7 -> T7 )] ),ℕ = ℕ,T0 = ℕ]
+[[ℕ] = [( T7 -> T7 )],ℕ = ℕ,T0 = ℕ]
+[ℕ = ( T7 -> T7 ),ℕ = ℕ,T0 = ℕ]
 
-Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in l resulted in : Ref ( [_T3] )
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 ) failed :  2 Unification failure (unifyEqs) : ℕ is incompatible with ( T7 -> T7 )
+["[( T2 -> ( T1 -> T0 ) ) = ( \8469 -> ( \8469 -> \8469 ) ),\8704T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),T1 = \8469]","[T2 = \8469,( T1 -> T0 ) = ( \8469 -> \8469 ),\8704T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = \8469]","[( T1 -> T0 ) = ( \8469 -> \8469 ),\8704T4.( [T4] -> T4 ) = ( T3 -> \8469 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = \8469]","[T1 = \8469,T0 = \8469,\8704T4.( [T4] -> T4 ) = ( T3 -> \8469 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),T1 = \8469]","[T0 = \8469,\8704T4.( [T4] -> T4 ) = ( T3 -> \8469 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469]","[\8704T4.( [T4] -> T4 ) = ( T3 -> \8469 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[( [T4] -> T4 ) = ( T3 -> \8469 ),( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[[T4] = T3,T4 = \8469,( T5 -> T3 ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[T4 = \8469,( T5 -> [T4] ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[( T5 -> [\8469] ) = \8704T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[( T5 -> [\8469] ) = ( Ref ( T6 ) -> T6 ),T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[T5 = Ref ( T6 ),[\8469] = T6,T5 = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[[\8469] = T6,Ref ( T6 ) = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[Ref ( [\8469] ) = Ref ( [( T7 -> T7 )] ),\8469 = \8469,T0 = \8469]","[[\8469] = [( T7 -> T7 )],\8469 = \8469,T0 = \8469]","[\8469 = ( T7 -> T7 ),\8469 = \8469,T0 = \8469]"]
  trace : 
-genEquas(lte= l,lty= T0, n= 1,context= fromList [("_",⬤),("l",∀_T3.Ref ( [_T3] ))])
- -----> [ T0 = ∀_T3.Ref ( [_T3] ) ]
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] ),∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
 
- {{{{{{ fromList []  }}}}}}    {{{{{{ fromList []  }}}}}}   genEquas(lte= let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in l,lty= T0, n= 1,context= fromList [])
+genEquas(lte= ( λx.(x)::!l ),lty= T1, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= !l,lty= T4, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T9, n= 11,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T9 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= !,lty= ( T9 -> T4 ), n= 10,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ) ]
+
+genEquas(lte= (cons) λx.(x),lty= ( T4 -> T1 ), n= 5,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7] ]
+
+genEquas(lte= λx.(x),lty= T5, n= 7,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T5 = ( T7 -> T8 ) ]
+
+genEquas(lte= x,lty= T8, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] )),("x",T7)])
+ -----> [ T8 = T7 ]
+
+genEquas(lte= ::,lty= ( T5 -> ( T4 -> T1 ) ), n= 6,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ) ]
+
+genEquas(lte= (:= l),lty= ( T1 -> T0 ), n= 2,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T2, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T2 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= :=,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ) ]
+
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [  ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [ [( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ),T1 = [T3]] ]
+
+genEquas(lte= [],lty= T1, n= 3,context= fromList [])
+ -----> [ T1 = [T3] ]
+
+genEquas(lte= ref,lty= ( T1 -> T0 ), n= 2,context= fromList [])
+ -----> [ ( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ) ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+genEquas(lte= let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( (hd !l) + 8 ),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+ {{{{{{ 2  fromList []  }}}}}}    {{{{{{ 2  fromList [("_T3",( T7 -> T7 ))]  }}}}}}   genEquas(lte=  + ,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ) ]
+
+genEquas(lte= hd,lty= ( T3 -> T2 ), n= 4,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ∀T4.( [T4] -> T4 ) = ( T3 -> T2 ) ]
+
+genEquas(lte= !,lty= ( T5 -> T3 ), n= 6,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ) ]
+
+genEquas(lte= l,lty= T5, n= 7,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T5 = Ref ( [_T3] ) ]
+
+genEquas(lte= !l,lty= T3, n= 5,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] )] ]
+
+genEquas(lte= (hd !l),lty= T2, n= 3,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] )] ]
+
+genEquas(lte= (+) (hd !l),lty= ( T1 -> T0 ), n= 2,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] )] ]
+
+genEquas(lte= 8,lty= T1, n= 7,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T1 = ℕ ]
+
+genEquas(lte= ( (hd !l) + 8 ),lty= T0, n= 1,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T4.( [T4] -> T4 ) = ( T3 -> T2 ),( T5 -> T3 ) = ∀T6.( Ref ( T6 ) -> T6 ),T5 = Ref ( [_T3] ),T1 = ℕ] ]
+
+
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ((hd !l) 5)
+
+[∀T3.( [T3] -> T3 ) = ( T2 -> ( T1 -> T0 ) ),( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [_T3] ),T1 = ℕ]
+[( [T3] -> T3 ) = ( T2 -> ( T1 -> T0 ) ),( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[[T3] = T2,T3 = ( T1 -> T0 ),( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[T3 = ( T1 -> T0 ),( T4 -> [T3] ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ]
+[( T4 -> [T3] ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[( T4 -> [T3] ) = ( Ref ( T5 ) -> T5 ),T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[T4 = Ref ( T5 ),[T3] = T5,T4 = Ref ( [( T7 -> T7 )] ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[[T3] = T5,Ref ( T5 ) = Ref ( [( T7 -> T7 )] ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[Ref ( [T3] ) = Ref ( [( T7 -> T7 )] ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[[T3] = [( T7 -> T7 )],T1 = ℕ,T3 = ( T1 -> T0 )]
+[T3 = ( T7 -> T7 ),T1 = ℕ,T3 = ( T1 -> T0 )]
+[T1 = ℕ,( T7 -> T7 ) = ( T1 -> T0 )]
+[( T7 -> T7 ) = ( ℕ -> T0 )]
+[T7 = ℕ,T7 = T0]
+[ℕ = T0]
+
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ((hd !l) 5) resulted in : ℕ
+ trace : 
+genEquas(lte= ((hd !l) 5),lty= T0, n= 1,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [∀T3.( [T3] -> T3 ) = ( T2 -> ( T1 -> T0 ) ),( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [_T3] ),T1 = ℕ] ]
+
+genEquas(lte= 5,lty= T1, n= 6,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T1 = ℕ ]
+
+genEquas(lte= (hd !l),lty= ( T1 -> T0 ), n= 2,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [∀T3.( [T3] -> T3 ) = ( T2 -> ( T1 -> T0 ) ),( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [_T3] )] ]
+
+genEquas(lte= !l,lty= T2, n= 4,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ),T4 = Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T4, n= 6,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T4 = Ref ( [_T3] ) ]
+
+genEquas(lte= !,lty= ( T4 -> T2 ), n= 5,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ( T4 -> T2 ) = ∀T5.( Ref ( T5 ) -> T5 ) ]
+
+genEquas(lte= hd,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ∀T3.( [T3] -> T3 ) = ( T2 -> ( T1 -> T0 ) ) ]
+
+ {{{{{{ 2  fromList [("_T3",( T7 -> T7 ))]  }}}}}}    {{{{{{ 2  fromList []  }}}}}}   genEquas(lte= let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ((hd !l) 5),lty= T0, n= 1,context= fromList [])
  -----> [  ]
 
 genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
@@ -64,17 +199,115 @@ genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T
 
 
 
- weakvs : fromList []
-Evaluation) of  : @p:1
+ weakvs : fromList [("_T3",( T7 -> T7 ))]
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( ((hd !l) 5) + 5 )
 
-0 | let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in l
-1 | let l = @p:1 in let _ = ( l:=( λx.(x)::!l ) ) in l
-2 | let _ = ( @p:1:=( λx.(x)::!@p:1 ) ) in @p:1
-3 | let _ = ( @p:1:=( λx.(x)::[] ) ) in @p:1
-4 | let _ = ( @p:1:=[λx.(x)] ) in @p:1
-5 | let _ = □ in @p:1
-6 | @p:1
+[( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] ),T3 = ℕ,T1 = ℕ]
+[T2 = ℕ,( T1 -> T0 ) = ( ℕ -> ℕ ),∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,T1 = ℕ]
+[( T1 -> T0 ) = ( ℕ -> ℕ ),∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> ℕ ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,T1 = ℕ]
+[T1 = ℕ,T0 = ℕ,∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> ℕ ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,T1 = ℕ]
+[T0 = ℕ,∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> ℕ ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ]
+[∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> ℕ ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[( [T5] -> T5 ) = ( T4 -> ( T3 -> ℕ ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[[T5] = T4,T5 = ( T3 -> ℕ ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[T5 = ( T3 -> ℕ ),( T6 -> [T5] ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[( T6 -> [( T3 -> ℕ )] ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[( T6 -> [( T3 -> ℕ )] ) = ( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[T6 = Ref ( T7 ),[( T3 -> ℕ )] = T7,T6 = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[[( T3 -> ℕ )] = T7,Ref ( T7 ) = Ref ( [( T7 -> T7 )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[Ref ( [( T3 -> ℕ )] ) = Ref ( [( [( T3 -> ℕ )] -> [( T3 -> ℕ )] )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[[( T3 -> ℕ )] = [( [( T3 -> ℕ )] -> [( T3 -> ℕ )] )],T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[( T3 -> ℕ ) = ( [( T3 -> ℕ )] -> [( T3 -> ℕ )] ),T3 = ℕ,ℕ = ℕ,T0 = ℕ]
+[T3 = [( T3 -> ℕ )],ℕ = [( T3 -> ℕ )],T3 = ℕ,ℕ = ℕ,T0 = ℕ]
 
-The evaluation succeeded! result : @p:1
+Type inference of : let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( ((hd !l) 5) + 5 ) failed :  2 Unification failure (unifyEqs) : T3 1 occurs in [( T3 -> ℕ )]
+["[( T2 -> ( T1 -> T0 ) ) = ( \8469 -> ( \8469 -> \8469 ) ),\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] ),T3 = \8469,T1 = \8469]","[T2 = \8469,( T1 -> T0 ) = ( \8469 -> \8469 ),\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,T1 = \8469]","[( T1 -> T0 ) = ( \8469 -> \8469 ),\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> \8469 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,T1 = \8469]","[T1 = \8469,T0 = \8469,\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> \8469 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,T1 = \8469]","[T0 = \8469,\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> \8469 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469]","[\8704T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> \8469 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[( [T5] -> T5 ) = ( T4 -> ( T3 -> \8469 ) ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[[T5] = T4,T5 = ( T3 -> \8469 ),( T6 -> T4 ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[T5 = ( T3 -> \8469 ),( T6 -> [T5] ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[( T6 -> [( T3 -> \8469 )] ) = \8704T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[( T6 -> [( T3 -> \8469 )] ) = ( Ref ( T7 ) -> T7 ),T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[T6 = Ref ( T7 ),[( T3 -> \8469 )] = T7,T6 = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[[( T3 -> \8469 )] = T7,Ref ( T7 ) = Ref ( [( T7 -> T7 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[Ref ( [( T3 -> \8469 )] ) = Ref ( [( [( T3 -> \8469 )] -> [( T3 -> \8469 )] )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[[( T3 -> \8469 )] = [( [( T3 -> \8469 )] -> [( T3 -> \8469 )] )],T3 = \8469,\8469 = \8469,T0 = \8469]","[( T3 -> \8469 ) = ( [( T3 -> \8469 )] -> [( T3 -> \8469 )] ),T3 = \8469,\8469 = \8469,T0 = \8469]","[T3 = [( T3 -> \8469 )],\8469 = [( T3 -> \8469 )],T3 = \8469,\8469 = \8469,T0 = \8469]"]
+ trace : 
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] ),∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= ( λx.(x)::!l ),lty= T1, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7,( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= !l,lty= T4, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ),T9 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T9, n= 11,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T9 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= !,lty= ( T9 -> T4 ), n= 10,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T9 -> T4 ) = ∀T10.( Ref ( T10 ) -> T10 ) ]
+
+genEquas(lte= (cons) λx.(x),lty= ( T4 -> T1 ), n= 5,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ),T5 = ( T7 -> T8 ),T8 = T7] ]
+
+genEquas(lte= λx.(x),lty= T5, n= 7,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T5 = ( T7 -> T8 ) ]
+
+genEquas(lte= x,lty= T8, n= 9,context= fromList [("l",∀_T3.Ref ( [_T3] )),("x",T7)])
+ -----> [ T8 = T7 ]
+
+genEquas(lte= ::,lty= ( T5 -> ( T4 -> T1 ) ), n= 6,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ∀T6.( T6 -> ( [T6] -> [T6] ) ) = ( T5 -> ( T4 -> T1 ) ) ]
+
+genEquas(lte= (:= l),lty= ( T1 -> T0 ), n= 2,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ),T2 = ∀_T3.Ref ( [_T3] )] ]
+
+genEquas(lte= l,lty= T2, n= 4,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ T2 = ∀_T3.Ref ( [_T3] ) ]
+
+genEquas(lte= :=,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ∀T3.( Ref ( T3 ) -> ( T3 -> ⬤ ) ) ]
+
+genEquas(lte= ( l:=( λx.(x)::!l ) ),lty= T0, n= 1,context= fromList [("l",∀_T3.Ref ( [_T3] ))])
+ -----> [  ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [ [( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ),T1 = [T3]] ]
+
+genEquas(lte= [],lty= T1, n= 3,context= fromList [])
+ -----> [ T1 = [T3] ]
+
+genEquas(lte= ref,lty= ( T1 -> T0 ), n= 2,context= fromList [])
+ -----> [ ( T1 -> T0 ) = ∀T2.( T2 -> Ref ( T2 ) ) ]
+
+genEquas(lte= (ref []),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+genEquas(lte= let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ( ((hd !l) 5) + 5 ),lty= T0, n= 1,context= fromList [])
+ -----> [  ]
+
+ {{{{{{ 2  fromList []  }}}}}}    {{{{{{ 2  fromList [("_T3",( T7 -> T7 ))]  }}}}}}   genEquas(lte=  + ,lty= ( T2 -> ( T1 -> T0 ) ), n= 3,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ) ]
+
+genEquas(lte= hd,lty= ( T4 -> ( T3 -> T2 ) ), n= 5,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ) ]
+
+genEquas(lte= !,lty= ( T6 -> T4 ), n= 7,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ ( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ) ]
+
+genEquas(lte= l,lty= T6, n= 8,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T6 = Ref ( [_T3] ) ]
+
+genEquas(lte= !l,lty= T4, n= 6,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] )] ]
+
+genEquas(lte= (hd !l),lty= ( T3 -> T2 ), n= 4,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] )] ]
+
+genEquas(lte= 5,lty= T3, n= 8,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T3 = ℕ ]
+
+genEquas(lte= ((hd !l) 5),lty= T2, n= 3,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] ),T3 = ℕ] ]
+
+genEquas(lte= (+) ((hd !l) 5),lty= ( T1 -> T0 ), n= 2,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] ),T3 = ℕ] ]
+
+genEquas(lte= 5,lty= T1, n= 8,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ T1 = ℕ ]
+
+genEquas(lte= ( ((hd !l) 5) + 5 ),lty= T0, n= 1,context= fromList [("_",⬤),("l",Ref ( [_T3] ))])
+ -----> [ [( T2 -> ( T1 -> T0 ) ) = ( ℕ -> ( ℕ -> ℕ ) ),∀T5.( [T5] -> T5 ) = ( T4 -> ( T3 -> T2 ) ),( T6 -> T4 ) = ∀T7.( Ref ( T7 ) -> T7 ),T6 = Ref ( [_T3] ),T3 = ℕ,T1 = ℕ] ]
 
 

@@ -6,6 +6,9 @@ import Data.Map as Map
 import Terms
 import Types
 
+{-
+  Returns true if the first type is presente in the other
+-}
 occurCheck :: LType -> LType -> Bool
 occurCheck (TVar x) (TVar y) =
   x == y
@@ -25,6 +28,9 @@ occurCheck tyv (WF b x lty) =
   tyv == WF b x lty || occurCheck tyv lty
 occurCheck _ _ = False
 
+{-
+  Alpha conversion in the inner types of a Record
+-}
 alphaConvTypesRL :: [(String, LType)] -> Map String String -> Int -> (Int, [(String, LType)])
 alphaConvTypesRL ((x, y) : l) ctx n =
   let (newN1, newL) = alphaConvTypesRL l ctx n
@@ -32,6 +38,10 @@ alphaConvTypesRL ((x, y) : l) ctx n =
    in (newN2, (x, newY) : newL)
 alphaConvTypesRL [] _ n = (n, [])
 
+{-
+  Alpha conversion of the first type, the other args are the same as
+  the other alphaConv function
+-}
 alphaConvTypes :: LType -> Map String String -> Int -> (Int, LType)
 alphaConvTypes (TVar x) ctx n =
   case Map.lookup x ctx of
@@ -75,17 +85,20 @@ mkString :: LTerm -> LType -> Int -> Map String LType -> String -> String
 mkString lte lty n ctx str =
   "genEquas(lte= " ++ show lte ++ ",lty= " ++ show lty ++ ", n= " ++ show n ++ ",context= " ++ show ctx ++ ")\n -----> [ " ++ str ++ " ]\n\n"
 
+{-
+  Result of the equation generation function
+  If it's successuful et returns the equations, the map associating (weak) )vars with types
+-}
 data GenEquasRes
   = GenEquasSuccess (Map String LType) [LTypeEqua] Int [String]
   | GenEquasFailed String [String]
 
--- (WVF, [WVT|V...])
+{-
+  inferenve context
+  (WVF, [WVT|V...])
+-}
 data InferenceContext
   = InferenceContext Int (Map String LType)
-
-getGRReqs :: GenEquasRes -> [LTypeEqua]
-getGRReqs (GenEquasSuccess _ eqs _ _) = eqs
-getGRReqs _ = error "errroooooooooor"
 
 instance Show GenEquasRes where
   show (GenEquasSuccess weakrvs eqs n strl) =
@@ -126,6 +139,9 @@ recordListToRecordType ((str, lte) : l) ctx weakvs =
        in (newWkvs2, (str, newLTy) : newL)
 recordListToRecordType [] weakvs _ = (weakvs, [])
 
+{-
+  Equation generation function
+-}
 genEquas :: LTerm -> LType -> Int -> Map String LType -> Map String LType -> [String] -> GenEquasRes
 genEquas (Var x) lty n context weakvs trace =
   case Map.lookup x context of
@@ -204,11 +220,19 @@ genEquas (Let v lte1 lte2) lty n context weakvs trace =
     TypeInferenceSuccess weakvs1 _ _ newLTy newtrace ->
       if isNonExpansible lte1
         then
-          let newContext = Map.insert v (generalise context newLTy) context
-           in genEquas lte2 lty n (updateCtx (Map.toList weakvs1) newContext) weakvs1 ([" {{{{{{ " ++ show weakvs1 ++ "  }}}}}}   "] ++ trace ++ newtrace)
+          let newContext =
+                Map.insert
+                  v
+                  (generalise newLTy)
+                  context
+           in genEquas lte2 lty n (updateCtx (Map.toList weakvs1) newContext) weakvs1 ([" {{{{{{ 1  " ++ show weakvs1 ++ "  }}}}}}   "] ++ trace ++ newtrace)
         else
-          let newContext = Map.insert v (weakGeneralise newLTy) context
-           in genEquas lte2 lty n (updateCtx (Map.toList weakvs1) newContext) weakvs1 ([" {{{{{{ " ++ show weakvs1 ++ "  }}}}}}   "] ++ trace ++ newtrace)
+          let newContext =
+                Map.insert
+                  v
+                  (weakGeneralise newLTy)
+                  context
+           in genEquas lte2 lty n (updateCtx (Map.toList weakvs1) newContext) weakvs1 ([" {{{{{{ 2  " ++ show weakvs1 ++ "  }}}}}}   "] ++ trace ++ newtrace)
     TypeInferenceFailure _ _ _ newtrace ->
       GenEquasFailed (" genEquasFailure {1} typeDetection of " ++ show lte1 ++ " in " ++ show context) (mkString Unit lty n context (" genEquasFailure {1} typeDetection of " ++ show lte1 ++ " in " ++ show context) : trace ++ newtrace)
 genEquas Add lty n context weakvs trace =
@@ -309,8 +333,8 @@ getFreeVars context (TRecord l) =
   List.map ((\[x] -> x) . (\(_, y) -> getFreeVars context y)) l
 getFreeVars _ _ = []
 
-generalise :: Map String LType -> LType -> LType
-generalise _ t =
+generalise :: LType -> LType
+generalise t =
   let fvs = getFreeVars [] t
    in List.foldr TPoly t fvs
 
@@ -324,6 +348,10 @@ weakGeneralise :: LType -> LType
 weakGeneralise lte =
   weakGeneraliseRec (getFreeVars [] lte) lte
 
+{-
+  substitues the variable in the first Argyument
+  By the terme in the second, in the third
+-}
 subs :: String -> LType -> LType -> LType
 subs x newLTy (TVar y)
   | x == y = newLTy
@@ -342,21 +370,11 @@ subs x newLTy (WVT lty) =
 subs x newLTy (WVF str)
   | x == str = newLTy
   | otherwise = WVF str
---
 subs x newLTy (WF True _ lty) =
   subs x newLTy lty
---
---subs x newLTy (WF _ _ lty) =
---(WF False str lty)
--- (subs x newLTy lty)
 subs x newLTy (WF False str lty)
   | x == str = WF True str (subs x newLTy lty)
   | otherwise = WF False str (subs x newLTy lty)
-{-
-| x == str = WF True str -}
-
-{-
-| otherwise = WF False str (subs x newLTy lty)-}
 --
 subs x newLTy (TRecord l) =
   TRecord (List.map (Data.Bifunctor.second (subs x newLTy)) l)
@@ -366,20 +384,30 @@ subsInLTyEq :: String -> LType -> LTypeEqua -> LTypeEqua
 subsInLTyEq x newLTy (LTypeEqua lty1 lty2) =
   LTypeEqua (subs x newLTy lty1) (subs x newLTy lty2)
 
+{-
+  Unification Step result
+-}
 data UnifStepRes
   = UnifStepSuccess (Map String LType) [LTypeEqua]
   | UnifStepFailure String
   deriving (Show)
 
-gelfusr :: UnifStepRes -> [LTypeEqua]
-gelfusr (UnifStepSuccess _ l) = l
-gelfusr _ = error "rezrezrez"
+--gelfusr :: UnifStepRes -> [LTypeEqua]
+--gelfusr (UnifStepSuccess _ l) = l
+--gelfusr _ = error "rezrezrez"
 
+{-
+  Returns true if the first record is a subtype
+  of the other
+-}
 isSubTypeOf :: LType -> LType -> Int -> Bool
 isSubTypeOf (TRecord l1) (TRecord l2) n
   | n >= List.length l1 = True
   | otherwise = fst (l1 !! n) == fst (l2 !! n) && isSubTypeOf (TRecord l1) (TRecord l2) (n + 1)
 
+{-
+  Unifies the two equations, must fist make sure that the first one is valide
+-}
 unifyRtypes :: LType -> LType -> Int -> [LTypeEqua]
 unifyRtypes (TRecord l1) (TRecord l2) n
   | n >= List.length l1 = [] --True
@@ -499,6 +527,8 @@ unifyEqs l strl lty n weakvs =
 
 getType :: LTypeEqua -> LType -> LType
 getType (LTypeEqua x y) lty
+  --  | occurCheck lty x = y
+  --  | occurCheck lty y = x
   | x == lty = y
   | y == lty = x
   | otherwise = error (show lty ++ " not present in " ++ show (LTypeEqua x y))
@@ -531,6 +561,34 @@ instance Show TypeInferenceRes where
       ++ "\n trace : \n"
       ++ List.intercalate "" trace
 
+{-
+[ T0  =  ℕ ,
+(  -> T3 -> ℕ ) = ( [T3 -> ℕ] -> (  ) ),
+ ( T6 -> [T3 -> ℕ] ) = ∀T7.( Ref ( T7 ) -> T7 ),
+T6 = Ref ( [_T3] ),T3 = ℕ,ℕ = ℕ]
+
+-}
+{-
+initWV :: String -> LType -> LType -> LType
+initWV x newLTy (WVF str)
+  | x == str = newLTy
+  | otherwise = WVF str
+initWV x newLTy (WF False str lty)
+  | x == str = WF True str (initWV x newLTy lty)
+  | otherwise = WF False str (initWV x newLTy lty)
+initWV x newLTy (WF True _ lty) =
+  initWV x newLTy lty
+initWV x newLTy y = subs x newLTy y
+
+initWVEq :: String -> LType -> LTypeEqua -> LTypeEqua
+initWVEq x newLTy (LTypeEqua lty1 lty2) =
+  LTypeEqua (initWV x newLTy lty1) (initWV x newLTy lty2)
+-}
+
+{-
+  If a referenced value changed, all it's occurances will be changed
+  In the equations and the context
+-}
 updateEqs :: [(String, LType)] -> [LTypeEqua] -> [LTypeEqua]
 updateEqs ((str, lty) : l) lteqs =
   updateEqs l (List.map (subsInLTyEq str lty) lteqs)

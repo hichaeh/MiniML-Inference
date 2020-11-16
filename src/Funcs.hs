@@ -130,8 +130,6 @@ testExp1 :: () -> LTerm
 testExp1 () =
   Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (App (App Add (App Hd (App Deref (Var "l")))) (LInt 8)))
 
---Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (App ((App Hd (App Deref (Var "l")))) (LInt 8)))
-
 {-
   let l = (ref []) in let _ = ( l:=( λx.(x)::!l ) ) in ((hd !l) 5)
   Type: ℕ

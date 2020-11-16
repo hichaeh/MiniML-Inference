@@ -8,8 +8,8 @@ data LTerm
   = Var String
   | App LTerm LTerm
   | Abs String LTerm
-  | IfZ LTerm LTerm LTerm
-  | IfE LTerm LTerm LTerm
+  | IfZ LTerm LTerm LTerm -- ifZero
+  | IfE LTerm LTerm LTerm -- ifEmpty
   | Let String LTerm LTerm
   | LInt Int
   | List [LTerm]
@@ -22,7 +22,7 @@ data LTerm
   | Fix
   | Ref
   | Deref
-  | Vaddr String
+  | Vaddr String -- Ref x -> Addr p.
   | Assign
   | Record [(String, LTerm)]
   | Get String
@@ -64,6 +64,12 @@ instance Show LTerm where
   show (Record fl) = "{" ++ List.intercalate ", " (List.map (\(x, y) -> x ++ ":" ++ show y) fl) ++ "}"
   show _ = "[show : undexpected constructor]"
 
+{-
+  applies the alpha conversion on evety term in the first list
+  2nd arg is the renaming context (keeps track of the new var names)
+  3rd arg is the counter (allows us to give each var a different name)
+  3th arg is he accumulation list were the terms are sotred after conversion
+-}
 alphaConvList :: [LTerm] -> Map String String -> Int -> [LTerm] -> (Int, [LTerm])
 alphaConvList ((Var str) : tl) context n acc =
   case Map.lookup str context of
@@ -74,6 +80,12 @@ alphaConvList (hd : tl) context n acc =
    in alphaConvList tl context newN (newLT : acc)
 alphaConvList [] _ n acc = (n, List.reverse acc)
 
+{-
+  applies the alpha conversion on every couple in the first list
+  2nd arg is the renaming context (keeps track of the new var names)
+  3rd arg is the counter (allows us to give each var a different name)
+  3th arg is he accumulation list were the couples are sotred after conversion
+-}
 alphaConvCplList :: [(String, LTerm)] -> Map String String -> Int -> [(String, LTerm)] -> (Int, [(String, LTerm)])
 alphaConvCplList ((fname, Var str) : tl) context n acc =
   case Map.lookup str context of
@@ -84,6 +96,9 @@ alphaConvCplList ((fn, lte) : tl) context n acc =
    in alphaConvCplList tl context newN ((fn, newLT) : acc)
 alphaConvCplList [] _ n acc = (n, List.reverse acc)
 
+{-
+  renames bound variables in a term so that each one has it's own name
+-}
 alphaConv :: LTerm -> Map String String -> Int -> (Int, LTerm)
 alphaConv (Var v) context n =
   case Map.lookup v context of
@@ -121,6 +136,9 @@ alphaConv (Record l) context n =
    in (newN, Record newL)
 alphaConv x _ n = (n, x)
 
+{-
+  replaces varToRep with newLT in the term that is the third argument
+-}
 instantiate :: String -> LTerm -> LTerm -> LTerm
 instantiate varToRep newLT (Var x)
   | x == varToRep = newLT

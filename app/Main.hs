@@ -40,10 +40,25 @@ main =
     --doType (testRefDerefAssign ())
     --doEval (testRefDerefAssign ()) 1234
 
-    --doType (testExp1 ())
+    doType (testExp1 ())
 
     --doEval (testExp1 ()) 1234
 
     doType (testExp2 ())
 
+    --doEval (testExp2 ()) 1234
+    doType (testExp3 ())
+
 --doEval (testExp2 ()) 1234
+
+{-
+
+[T5] =  T4
+T5 = ℕ -> ℕ
+T6 = Ref ( T7 )
+T4 = T7
+T6 = Ref ( [T7 -> T7 ] ),
+ℕ = ℕ,ℕ = ℕ]
+
+
+-}
