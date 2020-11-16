@@ -4,15 +4,15 @@ import Data.List as List
 import Data.Map as Map
 
 data LTerm
-  = Var String
+  = Var String 
   | App LTerm LTerm
   | Abs String LTerm
-  | IfZ LTerm LTerm LTerm
-  | IfE LTerm LTerm LTerm
-  | Let String LTerm LTerm
-  | LInt Int
+  | IfZ LTerm LTerm LTerm -- ifzero
+  | IfE LTerm LTerm LTerm -- ifempty
+  | Let String LTerm LTerm 
+  | LInt Int 
   | List [LTerm]
-  | Unit
+  | Unit 
   | Add
   | Sub
   | Cons
@@ -21,7 +21,7 @@ data LTerm
   | Fix
   | Ref
   | Deref
-  | Vaddr String
+  | Vaddr String -- Ref x -> Addr "x" = p1
   | Assign
   deriving (Eq)
 
