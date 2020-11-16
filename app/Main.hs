@@ -47,3 +47,11 @@ main =
     doType (testExp2 ())
 
     doEval (testExp2 ()) 1234
+
+    doType (testRec1 ())
+
+    doEval (testRec1 ()) 1234
+
+    doType (testRec2 ())
+
+    doEval (testRec2 ()) 1234

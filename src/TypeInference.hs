@@ -310,7 +310,13 @@ isNonExpansible (IfZ _ y z) =
   isNonExpansible y && isNonExpansible z
 isNonExpansible (IfE _ y z) =
   isNonExpansible y && isNonExpansible z
-isNonExpansible _ = False
+isNonExpansible _ =
+  False
+
+getFreeVarsFromCplList :: [(String, LType)] -> [String] -> [String]
+getFreeVarsFromCplList [] _ = []
+getFreeVarsFromCplList ((_, h2) : t) ctx =
+  getFreeVars ctx h2 ++ getFreeVarsFromCplList t ctx
 
 getFreeVars :: [String] -> LType -> [String]
 getFreeVars context (TVar x) =
@@ -330,7 +336,7 @@ getFreeVars context (WF b str lty)
   | b = getFreeVars context lty
   | otherwise = getFreeVars (str : context) lty
 getFreeVars context (TRecord l) =
-  List.map ((\[x] -> x) . (\(_, y) -> getFreeVars context y)) l
+  getFreeVarsFromCplList l context
 getFreeVars _ _ = []
 
 generalise :: LType -> LType

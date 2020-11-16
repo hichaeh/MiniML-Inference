@@ -138,3 +138,11 @@ testExp1 () =
 testExp2 :: () -> LTerm
 testExp2 () =
   Let "l" (App Ref (List [])) (Let "_" (App (App Assign (Var "l")) (App (App Cons (testI ())) (App Deref (Var "l")))) (App (App Hd (App Deref (Var "l"))) (LInt 5)))
+
+testRec1 :: () -> LTerm
+testRec1 () =
+  Let "x" (App Ref (Record [("a", LInt 5), ("b", List [LInt 3, LInt 7])])) (App (App (Set "a") (App Deref (Var "x"))) (LInt 7))
+
+testRec2 :: () -> LTerm
+testRec2 () =
+  Let "x" (App Ref (Record [("a", LInt 5), ("b", List [LInt 3, LInt 7])])) (App (Get "x") (App Deref (Var "x")))
